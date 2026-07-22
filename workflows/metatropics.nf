@@ -132,7 +132,8 @@ workflow METATROPICS {
    // Conditional execution of RAREFACTION
    def ch_reads_for_fastp
    def rarefactionEnabled = { v -> v == true || v?.toString()?.toLowerCase() == 'true' }
-   def rarefactionOn = rarefactionEnabled(params.rarefaction)
+   // No `def`: bare `params` already referenced above (Nextflow 23.04 VariableVisitor).
+   rarefactionOn = rarefactionEnabled(params.rarefaction)
    if (rarefactionOn) {
     RAREFACTION(
         ch_fixed_reads,
@@ -335,7 +336,8 @@ workflow METATROPICS {
 
 workflow.onComplete {
     if (Epi2meParams.isEpi2me(params)) {
-        def outdir = (params.outdir ?: params.out_dir)?.toString()?.trim()
+        // No `def`: bare `params` already referenced above (Nextflow 23.04 VariableVisitor).
+        outdir = (params.outdir ?: params.out_dir)?.toString()?.trim()
         if (outdir) {
             if (!Epi2meParams.publishReads(params)) {
                 epi2meTrimDir(outdir, 'Reads')

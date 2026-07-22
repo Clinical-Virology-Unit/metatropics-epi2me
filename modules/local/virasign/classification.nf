@@ -57,7 +57,8 @@ process VIRASIGN_CLASSIFICATION {
 
     def rawDbArg = VirasignDb.effectiveDatabase(params)
     def effectiveDbArg = rawDbArg ?: 'RVDB'
-    def dbLayout = VirasignDb.dbLayout(params, pipelineRoot)
+    // Use projectDir.toString() (not process-scoped pipelineRoot) on def RHS — Nextflow 23.04.
+    def dbLayout = VirasignDb.dbLayout(params, projectDir.toString())
     def dbMarkerPath = dbLayout.marker
     def legacyMarkerPath = dbLayout.legacy_marker ?: ''
     // Output isolation per database choice (avoid mixing when using -resume).
@@ -89,12 +90,14 @@ process VIRASIGN_CLASSIFICATION {
     } else if (effectiveDbArg) {
         def lower = effectiveDbArg.toLowerCase()
         if (lower == 'refseq') {
-            def refseqFasta = file("${db_root}/RefSeq/viral_refseq_complete.fna")
+            // No `def` here: Nextflow 23.04 errors on `def x = "${db_root}/..."` when db_root
+            // was already declared in the process (directive) scope.
+            refseqFasta = file("${db_root}/RefSeq/viral_refseq_complete.fna")
             if (refseqFasta.exists()) {
                 resolvedDbArg = refseqFasta.toAbsolutePath().toString()
             }
         } else if (lower == 'rvdb') {
-            def rvdbDir = file("${db_root}/RVDB")
+            rvdbDir = file("${db_root}/RVDB")
             if (rvdbDir.exists()) {
                 def candidates = null
                 if (VirasignDb.passAccessionsArg(params)) {
@@ -139,7 +142,8 @@ process VIRASIGN_CLASSIFICATION {
     add(params.virasign_blind?.toString()?.trim(), "-b '${params.virasign_blind}'")
 
     def tail = task.ext.args?.toString()?.trim()
-    def cmd = (['virasign', '-i', 'virasign_in', '-o', 'publish', "--db-dir", "${virasign_db_dir}", '-t', "${threads}"] + opt + (tail ? [tail] : [])).join(' ')
+    // No `def`: interpolates process-scoped virasign_db_dir (Nextflow 23.04).
+    cmd = (['virasign', '-i', 'virasign_in', '-o', 'publish', "--db-dir", "${virasign_db_dir}", '-t', "${threads}"] + opt + (tail ? [tail] : [])).join(' ')
     """
     # Barrier input from DB prep (validates on-host database before classification).
     test -f "${db_ready}"

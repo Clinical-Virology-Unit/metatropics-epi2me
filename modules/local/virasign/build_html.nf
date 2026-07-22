@@ -47,22 +47,23 @@ process VIRASIGN_SUMMARY {
     task.ext.when == null || task.ext.when
 
     script:
-    def rawDbArg = VirasignDb.effectiveDatabase(params)
-    def effectiveDbArg = rawDbArg ?: 'RVDB'
-    def virasignDbLabel = VirasignDb.dbLabel(params)
-    def outroot = file("${params.outdir ?: params.out_dir}/Classification/virasign/${virasignDbLabel}").toAbsolutePath().toString()
-    def outHtml = "Metatropics_Summary_${virasignDbLabel}.html"
-    def outCsv  = "Metatropics_Summary_${virasignDbLabel}.csv"
-    def zscore = params.virasign_zscore ?: 'true'
-    def zscore_controls = params.virasign_zscore_controls?.toString()?.trim()
-    def zscore_controls_safe = zscore_controls ?: ''
-    def virasign_blind_safe = params.virasign_blind?.toString()?.trim() ?: ''
-    def zscore_json = groovy.json.JsonOutput.toJson(zscore?.toString()?.trim() ?: 'false')
-    def zscore_controls_json = groovy.json.JsonOutput.toJson(zscore_controls_safe)
-    def virasign_blind_json = groovy.json.JsonOutput.toJson(virasign_blind_safe)
-    def quality = params.quality?.toString() ?: 'NA'
-    def depth = params.depth?.toString() ?: 'NA'
-    def agreement = params.agreement?.toString() ?: 'NA'
+    // Nextflow 23.04: avoid `def x = fn(params)` after process directives already touch params.
+    rawDbArg = VirasignDb.effectiveDatabase(params)
+    effectiveDbArg = rawDbArg ?: 'RVDB'
+    virasignDbLabel = VirasignDb.dbLabel(params)
+    outroot = file("${params.outdir ?: params.out_dir}/Classification/virasign/${virasignDbLabel}").toAbsolutePath().toString()
+    outHtml = "Metatropics_Summary_${virasignDbLabel}.html"
+    outCsv  = "Metatropics_Summary_${virasignDbLabel}.csv"
+    zscore = params.virasign_zscore ?: 'true'
+    zscore_controls = params.virasign_zscore_controls?.toString()?.trim()
+    zscore_controls_safe = zscore_controls ?: ''
+    virasign_blind_safe = params.virasign_blind?.toString()?.trim() ?: ''
+    zscore_json = groovy.json.JsonOutput.toJson(zscore?.toString()?.trim() ?: 'false')
+    zscore_controls_json = groovy.json.JsonOutput.toJson(zscore_controls_safe)
+    virasign_blind_json = groovy.json.JsonOutput.toJson(virasign_blind_safe)
+    quality = params.quality?.toString() ?: 'NA'
+    depth = params.depth?.toString() ?: 'NA'
+    agreement = params.agreement?.toString() ?: 'NA'
     def opt = []
     def add = { c, f -> if (c) opt << f }
     add(!!zscore, "--zscore ${zscore}")
@@ -105,7 +106,8 @@ process VIRASIGN_SUMMARY {
         filteringCriteria.min_nogr = params.virasign_min_nogr
     }
     def filtering_criteria_json = groovy.json.JsonOutput.toJson(filteringCriteria)
-    def database_used_json = groovy.json.JsonOutput.toJson(
+    // No `def`: RHS references effectiveDbArg assigned without def (Nextflow 23.04).
+    database_used_json = groovy.json.JsonOutput.toJson(
         VirasignDb.isCustomAccessionDb(params) ? 'Custom' : effectiveDbArg
     )
 

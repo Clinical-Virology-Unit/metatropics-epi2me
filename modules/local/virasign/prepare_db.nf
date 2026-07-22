@@ -44,18 +44,20 @@ process VIRASIGN_DB {
     add(params.virasign_max_ambiguous_fraction != null, "--max-ambiguous-fraction ${params.virasign_max_ambiguous_fraction}")
 
     def tail = task.ext.args?.toString()?.trim()
-    def cmd = (['virasign', '--prepare-db', "--db-dir", "${virasign_db_dir}"] + opt + (tail ? [tail] : [])).join(' ')
+    // No `def`: interpolates process-scoped virasign_db_dir (Nextflow 23.04).
+    cmd = (['virasign', '--prepare-db', "--db-dir", "${virasign_db_dir}"] + opt + (tail ? [tail] : [])).join(' ')
 
-    def marker = layout.marker
-    def subdir = layout.subdir
-    def min_bytes = layout.min_bytes
-    def fp_hash = VirasignDb.markerFingerprintHash(params)
-    def db_kind = layout.kind
-    def fasta_rel = layout.fasta_rel ?: ''
-    def accessions = VirasignDb.passAccessionsArg(params) ? params.virasign_accessions?.toString()?.trim() : ''
-    def custom_accession = layout.accession ?: ''
-    def custom_staging = layout.custom_staging ?: ''
-    def legacy_marker = layout.legacy_marker ?: ''
+    // Nextflow 23.04: do not `def x = layout.*` after process-scoped `layout` (VariableVisitor).
+    marker = layout.marker
+    subdir = layout.subdir
+    min_bytes = layout.min_bytes
+    fp_hash = VirasignDb.markerFingerprintHash(params)
+    db_kind = layout.kind
+    fasta_rel = layout.fasta_rel ?: ''
+    accessions = VirasignDb.passAccessionsArg(params) ? params.virasign_accessions?.toString()?.trim() : ''
+    custom_accession = layout.accession ?: ''
+    custom_staging = layout.custom_staging ?: ''
+    legacy_marker = layout.legacy_marker ?: ''
 
     """
     set -euo pipefail
