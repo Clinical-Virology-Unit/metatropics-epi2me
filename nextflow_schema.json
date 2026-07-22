@@ -1,0 +1,289 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "https://raw.githubusercontent.com/clinical-virology-unit/metatropics-epi2me/main/nextflow_schema.json",
+    "title": "clinical-virology-unit/metatropics-epi2me",
+    "workflow_title": "Metatropics-epi2me",
+    "description": "Identify viral pathogens from Nanopore metagenomic data (demultiplexed FASTQ, fastq_pass, or POD5).",
+    "url": "https://github.com/clinical-virology-unit/metatropics-epi2me",
+    "type": "object",
+    "definitions": {
+        "input_options": {
+            "title": "Input options",
+            "type": "object",
+            "fa_icon": "fas fa-arrow-right",
+            "description": "Select input mode and folder containing your sequencing data.",
+            "properties": {
+                "input_mode": {
+                    "type": "string",
+                    "enum": [
+                        "demultiplexed_fastq",
+                        "fastq_pass",
+                        "pod5"
+                    ],
+                    "default": "demultiplexed_fastq",
+                    "description": "How your data was prepared.",
+                    "help_text": "demultiplexed_fastq: per-sample FASTQ files or barcode folders. fastq_pass: on-device basecalled, not demultiplexed. pod5: raw POD5 with basecalling in the pipeline (GPU required)."
+                },
+                "reads": {
+                    "type": "string",
+                    "format": "path",
+                    "description": "Folder containing your sequencing data.",
+                    "help_text": "For fastq_pass, select the run folder or fastq_pass subfolder. For pod5, select the folder with POD5 files. For demultiplexed FASTQ, select the folder with FASTQ files or barcode subfolders."
+                },
+                "sample_sheet": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Optional sample sheet CSV (only for fastq_pass or pod5; leave blank to auto-detect).",
+                    "help_text": "Only needed for fastq_pass or pod5 when you want custom sample names. Templates: https://github.com/clinical-virology-unit/metatropics-epi2me/tree/main/assets"
+                },
+                "kit_name": {
+                    "type": "string",
+                    "default": "TWIST-96A-UDI",
+                    "description": "Dorado barcode kit (fastq_pass and pod5 modes).",
+                    "enum": [
+                        "EXP-NBD103",
+                        "EXP-NBD104",
+                        "EXP-NBD114",
+                        "EXP-NBD114-24",
+                        "EXP-NBD196",
+                        "EXP-PBC001",
+                        "EXP-PBC096",
+                        "SQK-16S024",
+                        "SQK-16S114-24",
+                        "SQK-LWB001",
+                        "SQK-MLK111-96-XL",
+                        "SQK-MLK114-96-XL",
+                        "SQK-NBD111-24",
+                        "SQK-NBD111-96",
+                        "SQK-NBD114-24",
+                        "SQK-NBD114-96",
+                        "SQK-PBK004",
+                        "SQK-PCB109",
+                        "SQK-PCB110",
+                        "SQK-PCB111-24",
+                        "SQK-PCB114-24",
+                        "SQK-RAB201",
+                        "SQK-RAB204",
+                        "SQK-RBK001",
+                        "SQK-RBK004",
+                        "SQK-RBK110-96",
+                        "SQK-RBK111-24",
+                        "SQK-RBK111-96",
+                        "SQK-RBK114-24",
+                        "SQK-RBK114-96",
+                        "SQK-RLB001",
+                        "SQK-RPB004",
+                        "SQK-RPB114-24",
+                        "TWIST-16-UDI",
+                        "TWIST-96A-UDI",
+                        "VSK-PTC001",
+                        "VSK-VMK001",
+                        "VSK-VMK004",
+                        "VSK-VPS001",
+                        "TWIST-96B-UDI",
+                        "TWIST-96C-UDI",
+                        "TWIST-96D-UDI"
+                    ]
+                },
+                "model": {
+                    "type": "string",
+                    "default": "hac",
+                    "enum": [
+                        "fast",
+                        "hac",
+                        "sup"
+                    ],
+                    "description": "Dorado basecalling model (pod5 mode only)."
+                }
+            }
+        },
+        "virasign_options": {
+            "title": "Virasign database",
+            "type": "object",
+            "fa_icon": "fas fa-virus",
+            "properties": {
+                "virasign_db_source": {
+                    "type": "string",
+                    "enum": [
+                        "RVDB",
+                        "RefSeq",
+                        "Custom"
+                    ],
+                    "default": "RVDB",
+                    "description": "Reference database for viral classification."
+                },
+                "virasign_accessions": {
+                    "type": "string",
+                    "description": "NCBI accession(s) when using Custom database (comma-separated)."
+                },
+                "virasign_ultrasensitive": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable Virasign ultrasensitive mode.",
+                    "help_text": "More sensitive viral detection; slower and may increase false positives. Leave off unless you need maximum sensitivity."
+                }
+            }
+        },
+        "output_options": {
+            "title": "Output",
+            "type": "object",
+            "fa_icon": "fas fa-folder-open",
+            "properties": {
+                "out_dir": {
+                    "type": "string",
+                    "format": "directory-path",
+                    "description": "Output directory for results."
+                }
+            }
+        },
+        "host_options": {
+            "title": "Host depletion",
+            "type": "object",
+            "fa_icon": "fas fa-user-shield",
+            "description": "Optional. Remove host background reads before viral classification.",
+            "properties": {
+                "Host": {
+                    "type": "string",
+                    "title": "Host",
+                    "enum": [
+                        "none",
+                        "human",
+                        "pan",
+                        "gorilla",
+                        "orangutan",
+                        "macaque",
+                        "aedes",
+                        "anopheles",
+                        "culex",
+                        "bat",
+                        "rat",
+                        "dog",
+                        "cat",
+                        "camel",
+                        "goat",
+                        "pig",
+                        "cow",
+                        "mouse",
+                        "chicken"
+                    ],
+                    "default": "none",
+                    "description": "Optional. First host to deplete."
+                },
+                "Host_additional": {
+                    "type": "string",
+                    "title": "Host additional",
+                    "enum": [
+                        "none",
+                        "human",
+                        "pan",
+                        "gorilla",
+                        "orangutan",
+                        "macaque",
+                        "aedes",
+                        "anopheles",
+                        "culex",
+                        "bat",
+                        "rat",
+                        "dog",
+                        "cat",
+                        "camel",
+                        "goat",
+                        "pig",
+                        "cow",
+                        "mouse",
+                        "chicken"
+                    ],
+                    "default": "none",
+                    "description": "Optional. Second host to deplete."
+                }
+            }
+        },
+        "advanced_options": {
+            "title": "Advanced options",
+            "type": "object",
+            "fa_icon": "fas fa-sliders-h",
+            "description": "Optional. Adjust read QC and reference-based consensus assembly. Defaults work for most runs.",
+            "properties": {
+                "minLength": {
+                    "type": "integer",
+                    "default": 200,
+                    "minimum": 1,
+                    "description": "Minimum read length (bp)."
+                },
+                "quality": {
+                    "type": "integer",
+                    "default": 15,
+                    "minimum": 1,
+                    "description": "Minimum Phred quality score."
+                },
+                "depth": {
+                    "type": "integer",
+                    "default": 25,
+                    "minimum": 1,
+                    "description": "Minimum per-position depth for consensus (positions below are masked as N)."
+                },
+                "agreement": {
+                    "type": "number",
+                    "default": 0.7,
+                    "minimum": 0,
+                    "maximum": 1,
+                    "description": "Minimum read fraction supporting a variant before it is applied to consensus (0.5 = majority, 0.9 = strict)."
+                },
+                "rarefaction": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Downsample each sample to a target number of bases before analysis.",
+                    "help_text": "Enabled by default. Turn off to use all reads. Samples with fewer than 100 reads are never subsampled."
+                },
+                "target_bases": {
+                    "type": "integer",
+                    "default": 500000000,
+                    "minimum": 1,
+                    "description": "Target bases per sample when rarefaction is enabled."
+                },
+                "epi2me_publish_reads": {
+                    "type": "boolean",
+                    "default": false,
+                    "title": "Reads",
+                    "description": "Publish intermediate Reads folder.",
+                    "help_text": "Off by default. When enabled, keeps QC and host-depleted FASTQs under Reads/. Works for all input modes (demultiplexed_fastq, fastq_pass, pod5)."
+                },
+                "epi2me_publish_bam": {
+                    "type": "boolean",
+                    "default": false,
+                    "title": "BAM",
+                    "description": "Publish Classification folder (Virasign BAMs).",
+                    "help_text": "Off by default. When enabled, keeps Virasign classification BAMs under Classification/. Works for all input modes (demultiplexed_fastq, fastq_pass, pod5)."
+                }
+            }
+        }
+    },
+    "allOf": [
+        {
+            "$ref": "#/definitions/input_options"
+        },
+        {
+            "$ref": "#/definitions/virasign_options"
+        },
+        {
+            "$ref": "#/definitions/output_options"
+        },
+        {
+            "$ref": "#/definitions/host_options"
+        },
+        {
+            "$ref": "#/definitions/advanced_options"
+        }
+    ],
+    "resources": {
+        "recommended": {
+            "cpus": 16,
+            "memory": "64GB"
+        },
+        "minimum": {
+            "cpus": 8,
+            "memory": "32GB"
+        },
+        "run_time": "30-120 min per sample; first RVDB download may take 1-2 h"
+    }
+}
