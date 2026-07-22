@@ -187,13 +187,16 @@ workflow METATROPICS {
     }
 
     // ── Virasign (phase 1): prepare DB once, then run per-sample with --no-html ──
+    // Declare before the if so later `def x = ch_virasign_confident` is valid under Nextflow 23.04
+    // (bare assignment without def puts the name in global scope and breaks subsequent def RHS refs).
+    def ch_virasign_confident
     if (params.run_virasign) {
         // Shared on-host results tree, isolated per virasign_database to avoid mixing results
         // across parameter changes when running with `-resume`.
-        def rawDbArg = VirasignDb.effectiveDatabase(params)
-        def effectiveDbArg = rawDbArg ?: 'RVDB'
-        def virasignDbLabel = VirasignDb.dbLabel(params)
-        def virasignResultsRoot = file("${params.outdir ?: params.out_dir}/Classification/virasign/${virasignDbLabel}")
+        // Do not use `def x = fn(params)` here: Nextflow 23.04 errors if bare `params` appears on a
+        // def RHS after `params` was already referenced (e.g. WorkflowMetatropics.initialise(params, log)).
+        virasignDbLabel = VirasignDb.dbLabel(params)
+        virasignResultsRoot = file("${params.outdir ?: params.out_dir}/Classification/virasign/${virasignDbLabel}")
         virasignResultsRoot.mkdirs()
 
         // Prepare DB once (prevents parallel workers from double-downloading).
