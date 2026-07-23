@@ -29,7 +29,15 @@ process VIRASIGN_DB {
 
     script:
     file(db_root).mkdirs()
-    file(layout.subdir).mkdirs()
+    // Custom: Virasign stages flat files under Custom/ first; only create Custom/<acc>/
+    // when we move them (avoids an empty KC….1/ folder during download).
+    if (layout.kind == 'custom') {
+        if (layout.custom_staging) {
+            file(layout.custom_staging).mkdirs()
+        }
+    } else {
+        file(layout.subdir).mkdirs()
+    }
     def opt = []
     def add = { c, f -> if (c) opt << f }
 
@@ -205,6 +213,37 @@ process VIRASIGN_DB {
       find "\$root" -type f \\( -name '*.fasta' -o -name '*.fna' -o -name '*.fa' \\) -size +\${MIN_BYTES}c 2>/dev/null | sort | tail -n 1
     }
 
+    # Virasign stores NCBI dumps + SQLite under <db>/taxonomy/ (or legacy taxonomy_cache/).
+    # Never wipe these during re-prepare: nucl_gb.accession2taxid.gz is multi-GB and
+    # classification will re-download it if the tree is removed but SQLite is missing.
+    taxonomy_ready () {
+      local root="\$1"
+      local db
+      for db in \\
+        "\$root/taxonomy/accession_to_organism_database.db" \\
+        "\$root/taxonomy_cache/accession_to_organism_database.db"
+      do
+        if [ -s "\$db" ]; then
+          return 0
+        fi
+      done
+      return 1
+    }
+
+    # Drop FASTA/index/metadata for a fresh prepare, but keep taxonomy/ dumps + SQLite.
+    clear_db_artifacts_keep_taxonomy () {
+      local root="\$1"
+      [ -d "\$root" ] || return 0
+      local f
+      for f in "\$root"/*; do
+        [ -e "\$f" ] || continue
+        case "\${f##*/}" in
+          taxonomy|taxonomy_cache) continue ;;
+        esac
+        rm -rf "\$f"
+      done
+    }
+
     marker_matches () {
       local m=""
       if [ -f "\$MARKER" ]; then
@@ -244,29 +283,36 @@ MARKER_EOF
         fasta="\$(find_primary_fasta "\$DB_SUBDIR" || true)"
       fi
 
-      if marker_matches; then
-        echo "Virasign database ready under \${DB_DIR} (${effectiveDbArg}); marker valid."
+      if marker_matches && taxonomy_ready "\$DB_SUBDIR"; then
+        echo "Virasign database ready under \${DB_DIR} (${effectiveDbArg}); marker + taxonomy valid."
         return 0
       fi
 
-      if [ -f "\$MARKER" ]; then
-        echo "Virasign database marker is stale or incomplete; removing and re-preparing..."
+      if marker_matches && ! taxonomy_ready "\$DB_SUBDIR"; then
+        echo "Virasign FASTA marker valid but taxonomy SQLite missing under \${DB_SUBDIR}; completing via prepare-db (keeping any NCBI dumps)."
+      elif [ -f "\$MARKER" ]; then
+        echo "Virasign database marker is stale or incomplete; clearing FASTA/index (preserving taxonomy/) and re-preparing..."
         rm -f "\$MARKER"
-        rm -rf "\$DB_SUBDIR"
+        clear_db_artifacts_keep_taxonomy "\$DB_SUBDIR"
         fasta=""
-      elif [ -n "\$fasta" ]; then
-        echo "Virasign database FASTA present without marker (interrupted after download); recording completion marker."
+      elif [ -n "\$fasta" ] && taxonomy_ready "\$DB_SUBDIR"; then
+        echo "Virasign database FASTA + taxonomy present without marker; recording completion marker."
         finalize_custom_layout
         fasta="\$(find_primary_fasta "\$DB_SUBDIR" || true)"
         write_marker "\$fasta"
         return 0
+      elif [ -n "\$fasta" ]; then
+        echo "Virasign FASTA present but taxonomy incomplete under \${DB_SUBDIR}; running prepare-db to finish taxonomy (keeping FASTA)."
       else
-        echo "Virasign database missing or incomplete under \${DB_SUBDIR}; removing stale partial files..."
-        rm -rf "\$DB_SUBDIR"
+        echo "Virasign database missing or incomplete under \${DB_SUBDIR}; clearing partial FASTA/index (preserving taxonomy/)..."
+        clear_db_artifacts_keep_taxonomy "\$DB_SUBDIR"
         rm -f "\$MARKER" || true
       fi
 
-      mkdir -p "\$DB_SUBDIR"
+      # Named DBs write directly into DB_SUBDIR. Custom stages under Custom/ then we move.
+      if [ "\$DB_KIND" != "custom" ]; then
+        mkdir -p "\$DB_SUBDIR"
+      fi
       ${cmd}
 
       if [ "\$DB_KIND" = "custom" ]; then
@@ -277,14 +323,16 @@ MARKER_EOF
       fi
       if [ -z "\$fasta" ]; then
         echo "ERROR: virasign --prepare-db finished but no valid database FASTA was found under \${DB_SUBDIR}." >&2
-        if [ "\$DB_KIND" != "custom" ]; then
-          rm -rf "\$DB_SUBDIR"
-        fi
+        echo "ERROR: leaving \${DB_SUBDIR} in place (including taxonomy/) for inspection; not wiping." >&2
         rm -f "\$MARKER" || true
         exit 1
       fi
       if [ "\$DB_KIND" = "custom" ]; then
         fasta="\$(find_primary_fasta "\$DB_SUBDIR" || true)"
+      fi
+      if ! taxonomy_ready "\$DB_SUBDIR"; then
+        echo "WARNING: prepare-db finished but taxonomy SQLite still missing under \${DB_SUBDIR}/taxonomy/." >&2
+        echo "WARNING: classification may re-download nucl_gb.accession2taxid.gz." >&2
       fi
       write_marker "\$fasta"
       echo "Virasign database prepared successfully."
