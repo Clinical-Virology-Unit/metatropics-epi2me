@@ -110,18 +110,28 @@ class Epi2meParams {
     private static void applyVirasignDb(Map params, def log) {
         def source = params.virasign_db_source?.toString()?.trim()
         if (!source) {
+            // Keep legacy CLI behaviour when only virasign_database is set.
             return
         }
 
         switch (source.toUpperCase()) {
             case 'RVDB':
+                params.virasign_database = 'RVDB'
+                // Avoid merging leftover Custom accessions into RVDB via -a.
+                params.virasign_accessions = null
+                break
             case 'REFSEQ':
+                params.virasign_database = 'RefSeq'
+                // Do not keep leftover Custom accessions that would be merged into RefSeq via -a.
+                params.virasign_accessions = null
                 break
             case 'CUSTOM':
                 if (!params.virasign_accessions?.toString()?.trim()) {
                     log.error "virasign_accessions is required when virasign_db_source is Custom"
                     System.exit(1)
                 }
+                // Pin named DB away from the default RVDB so nothing falls back to downloading it.
+                params.virasign_database = params.virasign_accessions.toString().trim().split(',')[0].trim()
                 break
             default:
                 log.error "Unknown virasign_db_source '${source}' (expected RVDB, RefSeq, or Custom)"

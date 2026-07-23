@@ -35,12 +35,15 @@ process VIRASIGN_DB {
 
     def effectiveDbArg = VirasignDb.effectiveDatabase(params)
     add(effectiveDbArg, "-d '${effectiveDbArg}'")
-    add(params.virasign_rvdb_version != null, "--rvdb-version ${params.virasign_rvdb_version}")
-    if (VirasignDb.passAccessionsArg(params)) {
-        add(params.virasign_accessions?.toString()?.trim(), "-a '${params.virasign_accessions}'")
-    }
-    add(params.virasign_enable_clustering == true, '--enable-clustering')
-    add(params.virasign_cluster_identity != null, "--cluster_identity ${params.virasign_cluster_identity}")
+    // Only for RVDB — never pass --rvdb-version when preparing RefSeq/Custom.
+    add(VirasignDb.passRvdbVersionArg(params), "--rvdb-version ${params.virasign_rvdb_version}")
+    // Custom: first accession is -d; further accessions are -a (merged custom FASTA).
+    // RVDB/RefSeq: all accessions are -a. Never imply -d RVDB for Custom.
+    extraAccessions = VirasignDb.additionalAccessionsArg(params)
+    add(extraAccessions as boolean, "-a '${extraAccessions}'")
+    // Clustering only applies to RVDB.
+    add(VirasignDb.dbSource(params) == 'RVDB' && params.virasign_enable_clustering == true, '--enable-clustering')
+    add(VirasignDb.dbSource(params) == 'RVDB' && params.virasign_cluster_identity != null, "--cluster_identity ${params.virasign_cluster_identity}")
     add(params.virasign_max_ambiguous_fraction != null, "--max-ambiguous-fraction ${params.virasign_max_ambiguous_fraction}")
 
     def tail = task.ext.args?.toString()?.trim()
@@ -54,10 +57,11 @@ process VIRASIGN_DB {
     fp_hash = VirasignDb.markerFingerprintHash(params)
     db_kind = layout.kind
     fasta_rel = layout.fasta_rel ?: ''
-    accessions = VirasignDb.passAccessionsArg(params) ? params.virasign_accessions?.toString()?.trim() : ''
+    accessions = extraAccessions ?: ''
     custom_accession = layout.accession ?: ''
     custom_staging = layout.custom_staging ?: ''
     legacy_marker = layout.legacy_marker ?: ''
+    db_source = VirasignDb.dbSource(params)
 
     """
     set -euo pipefail
@@ -69,10 +73,27 @@ process VIRASIGN_DB {
     MIN_BYTES=${min_bytes}
     FP_HASH="${fp_hash}"
     DB_KIND="${db_kind}"
+    DB_SOURCE="${db_source}"
     FASTA_REL="${fasta_rel}"
     ACCESSIONS="${accessions}"
     CUSTOM_ACCESSION="${custom_accession}"
     CUSTOM_STAGING="${custom_staging}"
+
+    echo "Virasign prepare-db source=\${DB_SOURCE} kind=\${DB_KIND} -d=${effectiveDbArg}"
+    case "\$DB_SOURCE" in
+      CUSTOM)
+        if echo "${effectiveDbArg}" | grep -Eiq '^(RVDB|REFSEQ)\$'; then
+          echo "ERROR: Custom mode refused to prepare named DB '${effectiveDbArg}' (would pull RVDB/RefSeq)." >&2
+          exit 1
+        fi
+        ;;
+      REFSEQ)
+        if echo "${effectiveDbArg}" | grep -Eiq '^RVDB\$'; then
+          echo "ERROR: RefSeq mode refused to prepare RVDB." >&2
+          exit 1
+        fi
+        ;;
+    esac
 
     cleanup_wrong_custom_roots () {
       [ "\$DB_KIND" = "custom" ] || return 0

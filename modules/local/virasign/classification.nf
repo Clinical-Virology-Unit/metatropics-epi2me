@@ -125,10 +125,9 @@ process VIRASIGN_CLASSIFICATION {
     }
 
     add(resolvedDbArg, "-d '${resolvedDbArg}'")
-    add(params.virasign_rvdb_version != null, "--rvdb-version ${params.virasign_rvdb_version}")
-    if (VirasignDb.passAccessionsArg(params)) {
-        add(params.virasign_accessions?.toString()?.trim(), "-a '${params.virasign_accessions}'")
-    }
+    add(VirasignDb.passRvdbVersionArg(params), "--rvdb-version ${params.virasign_rvdb_version}")
+    extraAccessions = VirasignDb.additionalAccessionsArg(params)
+    add(extraAccessions as boolean, "-a '${extraAccessions}'")
     add(params.virasign_ultrasensitive == true, '-u')
     add(params.virasign_min_identity != null, "--min_identity ${params.virasign_min_identity}")
     add(params.virasign_min_mapped_reads != null, "--min_mapped_reads ${params.virasign_min_mapped_reads}")
@@ -151,6 +150,7 @@ process VIRASIGN_CLASSIFICATION {
       echo "ERROR: Virasign database marker missing under ${db_root}; restart with -resume." >&2
       exit 1
     fi
+    echo "Virasign classification -d=${resolvedDbArg}"
 
     mkdir -p virasign_in
 

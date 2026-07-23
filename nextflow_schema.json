@@ -110,11 +110,13 @@
                         "Custom"
                     ],
                     "default": "RVDB",
-                    "description": "Reference database for viral classification."
+                    "description": "Reference database for viral classification.",
+                    "help_text": "RVDB or RefSeq downloads only that named database. Custom downloads only the accessions you enter (no RVDB/RefSeq)."
                 },
                 "virasign_accessions": {
                     "type": "string",
-                    "description": "NCBI accession(s) when using Custom database (comma-separated)."
+                    "description": "NCBI accession(s) when using Custom database (comma-separated).",
+                    "help_text": "Custom mode downloads ONLY these accessions (not RVDB or RefSeq). The first accession is the primary reference; additional ones are merged into the same custom database."
                 },
                 "virasign_ultrasensitive": {
                     "type": "boolean",

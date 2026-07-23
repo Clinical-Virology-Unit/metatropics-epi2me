@@ -8,7 +8,7 @@ if (epi2meInput) {
     params.epi2me_samplesheet = epi2meInput
 }
 if (params.virasign_db_source?.toString()?.trim()) {
-    log.info "Virasign database: ${VirasignDb.effectiveDatabase(params)} (source=${params.virasign_db_source})"
+    log.info "Virasign database: ${VirasignDb.effectiveDatabase(params)} (source=${VirasignDb.dbSource(params)})"
 }
 
 def samplesheet = params.input ?: params.epi2me_samplesheet
