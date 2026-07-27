@@ -6,15 +6,8 @@ process DORADO_ONT {
         'docker://nanoporetech/dorado:latest' :
         'nanoporetech/dorado:latest' }"
 
-    // Set container options for Docker and Singularity
     containerOptions {
-        if (workflow.containerEngine == 'singularity') {
-            return '--nv --no-home'
-        } else if (workflow.containerEngine == 'docker') {
-            return '--gpus all --rm --init'
-        } else {
-            return null
-        }
+        DoradoGpu.containerOptions(workflow, params)
     }
 
     input:
@@ -29,6 +22,7 @@ process DORADO_ONT {
 
     script:
     def args = task.ext.args ?: ''
+    def deviceFlag = DoradoGpu.deviceFlag(params)
 
     """
     # Run dorado basecaller 
@@ -37,7 +31,7 @@ process DORADO_ONT {
         --batchsize 1024 \
         --chunksize 10000 \
         --overlap 500 \
-        -x "auto" > calls.bam
+        ${deviceFlag} > calls.bam
 
     # Get version
     VERSION=\$(dorado --version 2>&1 | tail -n 1)

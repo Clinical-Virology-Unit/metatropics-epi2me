@@ -256,6 +256,24 @@
                     "title": "BAM",
                     "description": "Publish Classification folder (Virasign BAMs).",
                     "help_text": "Off by default. When enabled, keeps Virasign classification BAMs under Classification/. Works for all input modes (demultiplexed_fastq, fastq_pass, pod5)."
+                },
+                "dorado_device": {
+                    "type": "string",
+                    "default": "auto",
+                    "description": "Dorado compute device for POD5 basecalling only.",
+                    "help_text": "Demultiplexing (fastq_pass) always runs on CPU. For pod5 mode: auto uses GPU if available, cpu forces CPU basecalling, cuda:0 selects a specific GPU."
+                },
+                "gpu_count": {
+                    "type": "integer",
+                    "default": 1,
+                    "minimum": 1,
+                    "description": "GPUs to request from Docker for POD5 basecalling.",
+                    "help_text": "Default 1. Not used for fastq_pass demultiplexing."
+                },
+                "cuda_visible_devices": {
+                    "type": "string",
+                    "description": "Optional GPU index(es) for POD5 basecalling, e.g. 1 to skip GPU 0.",
+                    "help_text": "Not used for fastq_pass demultiplexing."
                 }
             }
         }
