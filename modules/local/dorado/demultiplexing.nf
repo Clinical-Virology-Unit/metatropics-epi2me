@@ -1,17 +1,21 @@
 process DORADO_DEMULTIPLEXING {
     tag "Demultiplexing"
-    label { task.attempt > 1 ? 'process_medium' : 'process_gpu' }
+    label 'process_medium'
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'docker://nanoporetech/dorado:latest' :
         'nanoporetech/dorado:latest' }"
 
+    // Demux on CPU — no GPU request, avoids conflict with MinKNOW during live sequencing.
     containerOptions {
-        DoradoGpu.containerOptions(workflow, task)
+        if (workflow.containerEngine == 'singularity') {
+            return '--no-home'
+        } else if (workflow.containerEngine == 'docker') {
+            return '--rm --init'
+        } else {
+            return null
+        }
     }
-
-    errorStrategy { task.attempt <= 1 ? 'retry' : 'terminate' }
-    maxRetries 1
 
     input:
     path reads
@@ -27,11 +31,7 @@ process DORADO_DEMULTIPLEXING {
     def args = task.ext.args ?: ''
 
     """
-    if [[ ${task.attempt} -gt 1 ]]; then
-        echo "Retrying demultiplexing without GPU (Docker could not expose a GPU)" >&2
-    fi
-
-    dorado demux -x auto --kit-name ${params.kit_name} --emit-fastq --barcode-both-ends --output-dir demultiplexed $reads
+    dorado demux -x cpu --kit-name ${params.kit_name} --emit-fastq --barcode-both-ends --output-dir demultiplexed $reads
 
     # Collect barcode FASTQs (Dorado 0.x flat layout and 2.x nested fastq_pass layout).
     find demultiplexed -type f \\( -path '*/fastq_pass/barcode*/*.fastq' -o -name '*_barcode*.fastq' \\) ! -path '*/unclassified/*' | sort -u > list.txt
