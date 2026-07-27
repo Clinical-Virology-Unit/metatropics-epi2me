@@ -1,50 +1,25 @@
 //
-// Dorado GPU / Docker GPU options for basecalling and demultiplexing.
+// Dorado -x auto uses GPU when the container exposes one; otherwise CPU.
+// Docker must pass --gpus for CUDA to be visible; if that fails, retry without GPU.
 //
 
 class DoradoGpu {
 
-    /** Dorado -x/--device flag (auto tries GPU, falls back to CPU). */
-    static String deviceFlag(Map params) {
-        def device = params.dorado_device?.toString()?.trim()
-        if (!device || device.equalsIgnoreCase('auto')) {
-            return '-x auto'
-        }
-        return "-x ${device}"
+    static boolean gpuAttempt(task) {
+        task.attempt <= 1
     }
 
-    static boolean wantsGpu(Map params) {
-        def device = params.dorado_device?.toString()?.trim()?.toLowerCase()
-        return device != 'cpu'
-    }
-
-    /** Docker --gpus flag; null when running Dorado on CPU only. */
-    static String dockerGpuFlag(Map params) {
-        if (!wantsGpu(params)) {
-            return null
-        }
-        def cvd = params.cuda_visible_devices?.toString()?.trim()
-        if (cvd) {
-            return "--gpus '\"device=${cvd}\"'"
-        }
-        def count = params.gpu_count?.toString()?.trim()
-        if (count && count.equalsIgnoreCase('all')) {
-            return '--gpus all'
-        }
-        return "--gpus ${count ?: 1}"
-    }
-
-    static String containerOptions(workflow, Map params) {
+    static String containerOptions(workflow, task) {
         def parts = []
-        def gpuFlag = dockerGpuFlag(params)
+        def useGpu = gpuAttempt(task)
         if (workflow.containerEngine == 'singularity') {
-            if (gpuFlag) {
+            if (useGpu) {
                 parts << '--nv'
             }
             parts << '--no-home'
         } else if (workflow.containerEngine == 'docker') {
-            if (gpuFlag) {
-                parts << gpuFlag
+            if (useGpu) {
+                parts << '--gpus 1'
             }
             parts << '--rm'
             parts << '--init'
