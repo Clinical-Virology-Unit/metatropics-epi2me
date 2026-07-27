@@ -31,7 +31,7 @@ process DORADO_DEMULTIPLEXING {
     def args = task.ext.args ?: ''
 
     """
-    dorado demux -x cpu --kit-name ${params.kit_name} --emit-fastq --barcode-both-ends --output-dir demultiplexed $reads
+    dorado demux --kit-name ${params.kit_name} --emit-fastq --barcode-both-ends --output-dir demultiplexed $reads
 
     # Collect barcode FASTQs (Dorado 0.x flat layout and 2.x nested fastq_pass layout).
     find demultiplexed -type f \\( -path '*/fastq_pass/barcode*/*.fastq' -o -name '*_barcode*.fastq' \\) ! -path '*/unclassified/*' | sort -u > list.txt
