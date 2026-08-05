@@ -36,8 +36,8 @@
                     "type": "string",
                     "title": "Sample sheet",
                     "format": "file-path",
-                    "description": "Optional sample sheet CSV (only for fastq_pass or pod5; leave blank to auto-detect).",
-                    "help_text": "Only needed for fastq_pass or pod5 when you want custom sample names. Templates: https://github.com/clinical-virology-unit/metatropics-epi2me/tree/main/assets"
+                    "description": "Optional samplesheet CSV (only for fastq_pass or pod5; leave blank to auto-detect). Not needed for demultiplexed_fastq.",
+                    "help_text": "For fastq_pass or pod5, provide a samplesheet for custom sample names, or leave blank to auto-detect. For demultiplexed_fastq, leave blank (sample IDs come from FASTQ names or barcode folders). Templates: https://github.com/clinical-virology-unit/metatropics-epi2me/tree/main/assets"
                 },
                 "kit_name": {
                     "type": "string",
