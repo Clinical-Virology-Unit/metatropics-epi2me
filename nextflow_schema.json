@@ -94,6 +94,12 @@
                         "sup"
                     ],
                     "description": "Dorado basecalling model (pod5 mode only)."
+                },
+                "virasign_zscore_controls": {
+                    "type": "string",
+                    "title": "Negative controls (Z-score)",
+                    "description": "Optional. Sample IDs used as negative/water controls for Z-score (overrides auto-detect).",
+                    "help_text": "Leave empty to auto-detect controls (names containing water/h2o/h20 or NC/CN+digits). To override, enter samplesheet sample IDs, comma-separated (e.g. H20_1,H20_2,BG_1,BG_2)."
                 }
             }
         },
@@ -123,17 +129,6 @@
                     "default": false,
                     "description": "Enable Virasign ultrasensitive mode.",
                     "help_text": "More sensitive viral detection; slower and may increase false positives. Leave off unless you need maximum sensitivity."
-                },
-                "virasign_zscore": {
-                    "type": "string",
-                    "default": "true",
-                    "description": "Compute Z-scores against water/negative-control samples.",
-                    "help_text": "Default enabled. Set to false/0/no/off to disable. Needs ≥2 water/negative controls (auto-detected by name, or set manually below)."
-                },
-                "virasign_zscore_controls": {
-                    "type": "string",
-                    "description": "Optional. Manual Z-score control sample IDs (overrides auto-detect).",
-                    "help_text": "Leave empty to auto-detect controls (names containing water/h2o/h20 or NC/CN+digits). To override, enter samplesheet sample IDs, comma-separated (e.g. H20_1,H20_2,BG_1,BG_2). You can also pass FASTQ paths or a text file (one ID/path per line)."
                 }
             }
         },
