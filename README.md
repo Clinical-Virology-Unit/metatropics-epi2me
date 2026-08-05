@@ -41,9 +41,3 @@ De Souza Novaes, A.†, Jansen, D.†, de Block, T., Coppens, S., Ariën, K.K., 
 \* These authors contributed equally (shared senior authorship).
 
 Also cite the tools you use (Nextflow, Virasign, Clair3, etc.); see [Metatropics CITATIONS.md](https://github.com/Clinical-Virology-Unit/Metatropics/blob/main/nf-metatropics/assets/citing/CITATIONS.md).
-
-## Contact
-
-**Authors:** [Clinical Virology Unit](https://github.com/Clinical-Virology-Unit/Metatropics) · [Daan Jansen](https://github.com/DaanJansen94)  
-Institute of Tropical Medicine, Antwerp  
-Issues: [metatropics-epi2me](https://github.com/Clinical-Virology-Unit/metatropics-epi2me/issues)
