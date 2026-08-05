@@ -22,7 +22,11 @@ process VIRASIGN_CLASSIFICATION {
     }
     def zc = params.virasign_zscore_controls?.toString()?.trim()
     if (zc) {
-        zc.split(',').collect { it.trim() }.findAll { it }.each { addBindDir(it) }
+        // Bind only real paths; sample IDs (e.g. H20_1,BG_1) need no bind.
+        zc.split(',').collect { it.trim() }.findAll { it }.each { tok ->
+            def fp = file(tok)
+            if (fp.exists()) addBindDir(tok)
+        }
     }
     addBindDir(params.virasign_blind?.toString()?.trim())
     extraBindDirs = extraBindDirs.unique()

@@ -1,0 +1,2 @@
+2026-08-05 14:34:27	-	shrivelled_laplace	-	e7ac7c270a30eb1cd0b8cf359cc32668	0521bd3e-3078-44be-8c8d-ad366b492e36	nextflow run . -preview
+2026-08-05 14:36:25	31m 13s	desperate_gautier	OK	e7ac7c270a30eb1cd0b8cf359cc32668	b2c18b7b-dc10-4373-b8c9-1eeb6df76f8b	nextflow run . -profile docker --input /data/Daan/Projects/Ane_test_NC/Input/samplesheet.csv --out_dir /data/Daan/Projects/Ane_test_NC/Output --Host human --virasign_zscore_controls H20_1,H20_2,BG_1,BG_2
