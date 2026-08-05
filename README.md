@@ -34,7 +34,7 @@ By default, intermediate folders Reads/ and Classification/ are not kept in EPI2
 If you use Metatropics in your research, please cite:
 
 ```
-De Souza Novaes, A.†, Jansen, D.†, de Block, T., Coppens, S., Ariën, K.K., Selhorst, P., Rezende, A.M.*, & Vercauteren, K*. (2026). Metatropics: Human viral pathogen identification and consensus genome calling from nanopore metagenomic sequencing data. (v0.1.1). Zenodo. https://doi.org/10.5281/zenodo.20430617
+De Souza Novaes, A.†, Jansen, D.†, de Block, T., Coppens, S., Ariën, K.K., Selhorst, P., Rezende, A.M.*, & Vercauteren, K*. (2026). Metatropics: Human viral pathogen identification and consensus genome calling from nanopore metagenomic sequencing data. (v0.1.2). Zenodo. https://doi.org/10.5281/zenodo.20430617
 ```
 
 † These authors contributed equally (shared first authorship).  
