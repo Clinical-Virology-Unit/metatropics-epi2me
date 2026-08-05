@@ -11,12 +11,11 @@
             "title": "Input options",
             "type": "object",
             "fa_icon": "fas fa-arrow-right",
-            "description": "Select input mode and folder containing your sequencing data. Fields marked * are required.",
-            "required": ["input_mode", "reads"],
+            "description": "Select input mode and folder containing your sequencing data.",
             "properties": {
                 "input_mode": {
                     "type": "string",
-                    "title": "Input mode *",
+                    "title": "Input mode",
                     "enum": [
                         "demultiplexed_fastq",
                         "fastq_pass",
@@ -28,7 +27,7 @@
                 },
                 "reads": {
                     "type": "string",
-                    "title": "Reads *",
+                    "title": "Reads",
                     "format": "path",
                     "description": "Folder containing your sequencing data.",
                     "help_text": "For fastq_pass, select the run folder or fastq_pass subfolder. For pod5, select the folder with POD5 files. For demultiplexed FASTQ, select the folder with FASTQ files or barcode subfolders."
@@ -42,9 +41,9 @@
                 },
                 "kit_name": {
                     "type": "string",
-                    "title": "Barcode kit *",
+                    "title": "Barcode kit",
                     "default": "TWIST-96A-UDI",
-                    "description": "Dorado barcode kit (required for fastq_pass and pod5 modes).",
+                    "description": "Dorado barcode kit (fastq_pass and pod5 modes).",
                     "enum": [
                         "EXP-NBD103",
                         "EXP-NBD104",
@@ -92,14 +91,14 @@
                 },
                 "model": {
                     "type": "string",
-                    "title": "Basecalling model *",
+                    "title": "Basecalling model",
                     "default": "hac",
                     "enum": [
                         "fast",
                         "hac",
                         "sup"
                     ],
-                    "description": "Dorado basecalling model (required for pod5 mode)."
+                    "description": "Dorado basecalling model (pod5 mode only)."
                 },
                 "virasign_zscore_controls": {
                     "type": "string",
@@ -113,12 +112,10 @@
             "title": "Virasign database",
             "type": "object",
             "fa_icon": "fas fa-virus",
-            "description": "Fields marked * are required for the selected database mode.",
-            "required": ["virasign_db_source"],
             "properties": {
                 "virasign_db_source": {
                     "type": "string",
-                    "title": "Database *",
+                    "title": "Database",
                     "enum": [
                         "RVDB",
                         "RefSeq",
@@ -130,9 +127,9 @@
                 },
                 "virasign_accessions": {
                     "type": "string",
-                    "title": "Accessions *",
+                    "title": "Accessions",
                     "description": "NCBI accession(s) when using Custom database (comma-separated).",
-                    "help_text": "Required when Database is Custom. Downloads ONLY these accessions (not RVDB or RefSeq). The first accession is the primary reference; additional ones are merged into the same custom database."
+                    "help_text": "Needed when Database is Custom. Downloads ONLY these accessions (not RVDB or RefSeq). The first accession is the primary reference; additional ones are merged into the same custom database."
                 },
                 "virasign_ultrasensitive": {
                     "type": "boolean",
@@ -141,18 +138,17 @@
                     "description": "Enable Virasign ultrasensitive mode.",
                     "help_text": "More sensitive viral detection; slower and may increase false positives. Leave off unless you need maximum sensitivity."
                 }
-            }
+            },
+            "description": "Choose the viral reference database."
         },
         "output_options": {
             "title": "Output",
             "type": "object",
             "fa_icon": "fas fa-folder-open",
-            "description": "Fields marked * are required.",
-            "required": ["out_dir"],
             "properties": {
                 "out_dir": {
                     "type": "string",
-                    "title": "Output directory *",
+                    "title": "Output directory",
                     "format": "directory-path",
                     "description": "Output directory for results."
                 }
