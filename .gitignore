@@ -1,0 +1,28 @@
+## Nextflow run artefacts
+.nextflow/
+.nextflow.log*
+work/
+.epi2me_work/
+trace*
+timeline*
+report*
+dag*
+
+## Local reference downloads (not part of the repo)
+Databases/
+Databases1/
+host/
+
+## Nextflow config evaluation artefacts
+_nf_config_*
+
+## Common OS / editor noise
+.DS_Store
+Thumbs.db
+
+## Python packaging artefacts
+*.egg-info/
+build/
+dist/
+__pycache__/
+*.py[cod]
