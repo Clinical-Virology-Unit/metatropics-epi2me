@@ -69,7 +69,7 @@ class VirasignDb {
                     "Custom Virasign database requires virasign_accessions (comma-separated NCBI accessions)."
                 )
             default:
-                return params.virasign_database?.toString()?.trim() ?: 'RVDB'
+                return params.virasign_database?.toString()?.trim() ?: 'RefSeq'
         }
     }
 

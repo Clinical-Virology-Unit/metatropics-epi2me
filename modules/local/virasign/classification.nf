@@ -60,7 +60,7 @@ process VIRASIGN_CLASSIFICATION {
     def add = { c, f -> if (c) opt << f }
 
     def rawDbArg = VirasignDb.effectiveDatabase(params)
-    def effectiveDbArg = rawDbArg ?: 'RVDB'
+    def effectiveDbArg = rawDbArg ?: 'RefSeq'
     // Use projectDir.toString() (not process-scoped pipelineRoot) on def RHS — Nextflow 23.04.
     def dbLayout = VirasignDb.dbLayout(params, projectDir.toString())
     def dbMarkerPath = dbLayout.marker

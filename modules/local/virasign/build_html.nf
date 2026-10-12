@@ -26,6 +26,9 @@ process VIRASIGN_SUMMARY {
         }
     }
     addBindDir(params.virasign_blind?.toString()?.trim())
+    // Samplesheet so the summary can include input samples that never reached Virasign
+    // (e.g. empty after host depletion, or dropped by an optional upstream output).
+    addBindDir((params.input ?: params.epi2me_samplesheet ?: params.sample_sheet)?.toString()?.trim())
     extraBindDirs = extraBindDirs.unique()
 
     if (workflow.containerEngine == 'docker' || workflow.containerEngine == 'podman') {
@@ -53,7 +56,7 @@ process VIRASIGN_SUMMARY {
     script:
     // Nextflow 23.04: avoid `def x = fn(params)` after process directives already touch params.
     rawDbArg = VirasignDb.effectiveDatabase(params)
-    effectiveDbArg = rawDbArg ?: 'RVDB'
+    effectiveDbArg = rawDbArg ?: 'RefSeq'
     virasignDbLabel = VirasignDb.dbLabel(params)
     outroot = file("${params.outdir ?: params.out_dir}/Classification/virasign/${virasignDbLabel}").toAbsolutePath().toString()
     outHtml = "Metatropics_Summary_${virasignDbLabel}.html"
@@ -65,6 +68,8 @@ process VIRASIGN_SUMMARY {
     zscore_json = groovy.json.JsonOutput.toJson(zscore?.toString()?.trim() ?: 'false')
     zscore_controls_json = groovy.json.JsonOutput.toJson(zscore_controls_safe)
     virasign_blind_json = groovy.json.JsonOutput.toJson(virasign_blind_safe)
+    samplesheet_json = groovy.json.JsonOutput.toJson((params.input ?: params.epi2me_samplesheet ?: params.sample_sheet)?.toString()?.trim() ?: '')
+    virasign_db_label_json = groovy.json.JsonOutput.toJson(virasignDbLabel)
     quality = params.quality?.toString() ?: 'NA'
     depth = params.depth?.toString() ?: 'NA'
     agreement = params.agreement?.toString() ?: 'NA'
@@ -835,6 +840,7 @@ if summary_csv.exists():
 
 if summary_html.exists():
     import json
+    import sys
 
     text = summary_html.read_text(encoding="utf-8")
 
@@ -1567,6 +1573,14 @@ if summary_html.exists():
 
     summary_html.write_text(text, encoding="utf-8")
 PY
+
+    # Samples that never reached Virasign: still list them as empty no-hit in CSV/HTML.
+    metatropics_inject_missing_samples.py \
+        --outdir '${params.outdir ?: params.out_dir}' \
+        --csv '${outCsv}' \
+        --html '${outHtml}' \
+        --samplesheet ${samplesheet_json} \
+        --db-label ${virasign_db_label_json}
 
     # Keep the shared Classification/virasign tree focused on per-sample outputs only.
     rm -f "${outroot}"/results_summary_*.html "${outroot}"/results_summary_*.csv "${outroot}"/.virasign.log || true
