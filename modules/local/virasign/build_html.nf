@@ -3,8 +3,8 @@ process VIRASIGN_SUMMARY {
     label 'process_medium'
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'library://jansendaan94_v2/metatropics/virasign:latest':
-        'daanjansen94/virasign:latest' }"
+        'docker://daanjansen94/virasign:v0.1.0':
+        'daanjansen94/virasign:v0.1.0' }"
 
     // Bind outdir and read results via params.
     def outAbs = file(params.outdir ?: params.out_dir).toAbsolutePath().toString()

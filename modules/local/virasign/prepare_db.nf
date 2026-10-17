@@ -4,8 +4,8 @@ process VIRASIGN_DB {
     cache false
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'library://jansendaan94_v2/metatropics/virasign:latest':
-        'daanjansen94/virasign:latest' }"
+        'docker://daanjansen94/virasign:v0.1.0':
+        'daanjansen94/virasign:v0.1.0' }"
 
     // Bind the shared Databases tree (RVDB, Human, per-accession Custom, …).
     def pipelineRoot = projectDir.toString()
