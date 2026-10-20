@@ -3,8 +3,8 @@ process VIRASIGN_CLASSIFICATION {
     label 'process_medium'
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'docker://daanjansen94/virasign:v0.1.0':
-        'daanjansen94/virasign:v0.1.0' }"
+        'docker://daanjansen94/virasign:v0.1.1':
+        'daanjansen94/virasign:v0.1.1' }"
 
     // Bind the shared Databases tree; virasign --db-dir may be a per-accession subfolder for Custom.
     def pipelineRoot = projectDir.toString()
