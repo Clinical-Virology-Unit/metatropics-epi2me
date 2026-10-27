@@ -160,6 +160,15 @@ def inject_html(
     existing_options = set(re.findall(r'<option value="([^"]+)">', text))
     to_add_dom = [sid for sid in expected_ids if sid not in existing_sections]
 
+    def _sample_has_refs(sid: str) -> bool:
+        dbs = samples_obj.get(sid)
+        if not isinstance(dbs, dict):
+            return False
+        for payload in dbs.values():
+            if isinstance(payload, dict) and payload.get("references"):
+                return True
+        return False
+
     all_set = set(all_obj)
     for sid in expected_ids:
         if sid not in all_set:
@@ -177,6 +186,8 @@ def inject_html(
     except Exception:
         pass
 
+    empty_ids = [sid for sid in all_obj if not _sample_has_refs(sid)]
+
     text = _replace_json_assign(text, "samplesData", samples_obj)
     text = _replace_json_assign(text, "allSamples", all_obj)
 
@@ -187,6 +198,47 @@ def inject_html(
         text,
         count=1,
     )
+
+    def _no_virus_banner(sid: str) -> str:
+        es = _esc(sid)
+        return f"""
+                <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 30px; margin: 20px 0; text-align: center;">
+                    <h2 style="color: #856404;">⚠️ No Viruses Detected</h2>
+                    <p style="color: #856404;">Sample: {es}</p>
+                </div>
+"""
+
+    # Dropdown: mark every empty sample as "(no viruses detected)".
+    for sid in empty_ids:
+        es = _esc(sid)
+        text, _ = re.subn(
+            rf'(<option value="{re.escape(sid)}">)[^<]*(</option>)',
+            rf"\g<1>{es} (no viruses detected)\g<2>",
+            text,
+            count=1,
+        )
+
+    # Existing empty samples: replace empty viral table with the same banner used for missing samples.
+    for sid in empty_ids:
+        if sid not in existing_sections:
+            continue
+        es = _esc(sid)
+        pattern = (
+            rf'(<div class="sample-section"[^>]*id="sample-{re.escape(sid)}"[^>]*>'
+            rf'.*?</div>\s*</div>\s*)'
+            rf'<div class="table-section">.*?</table>\s*</div>'
+        )
+        repl = rf"\1{_no_virus_banner(sid)}"
+        text, n = re.subn(pattern, repl, text, count=1, flags=re.S)
+        if n == 0 and f'No Viruses Detected' not in text.split(f'id="sample-{sid}"', 1)[-1][:2000]:
+            # Fallback: insert banner after metadata block when table markup differs.
+            text, _ = re.subn(
+                rf'(id="metadata-{re.escape(sid)}">.*?</div>\s*</div>)',
+                rf"\1{_no_virus_banner(sid)}",
+                text,
+                count=1,
+                flags=re.S,
+            )
 
     if to_add_dom:
         opt_html = "".join(
@@ -215,11 +267,7 @@ def inject_html(
                         <!-- Metadata will be populated by JavaScript -->
                     </div>
                 </div>
-
-                <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 30px; margin: 20px 0; text-align: center;">
-                    <h2 style="color: #856404;">⚠️ No Viruses Detected</h2>
-                    <p style="color: #856404;">Sample: {es}</p>
-                </div>
+{_no_virus_banner(sid)}
             </div>
 """
             )

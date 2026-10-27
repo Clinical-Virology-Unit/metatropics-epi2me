@@ -128,45 +128,17 @@ process VIRASIGN_SUMMARY {
     OUT='${outroot}'
     export OUT
     export TARGET_ACCESSION='${targetAccession}'
+    export VIRASIGN_DB_LABEL='${virasignDbLabel}'
     export OUT_HTML='${outHtml}'
     export OUT_CSV='${outCsv}'
 
     # Include every sample with a per-sample final_selected JSON (empty [] when no confident hits).
-
-    # Detect confident hits. Do NOT use find|head|grep: with pipefail, find exits 141 (SIGPIPE)
-    # once head closes the pipe, which falsely looks like "no hits" on large sample sets.
-    _has_confident_hits() {
-      find "\$1" -name '*_final_selected_references.json' \\( -type f -o -type l \\) -print -quit 2>/dev/null | grep -q .
-    }
+    # Always run virasign --build-html: even with zero viral hits it emits the standard Metatropics
+    # layout (empty reference tables / no-virus samples). Do not emit a bare placeholder page.
 
     if [ ! -d "\$OUT" ]; then
       echo "ERROR: Virasign results root missing: \$OUT" >&2
       exit 1
-    fi
-    if ! _has_confident_hits "\$OUT"; then
-      # No confident hits in any sample: don't fail the pipeline; emit a small placeholder summary.
-      csv="${outCsv}"
-      html="${outHtml}"
-      printf "sample,confident\\n" > "\$csv"
-      cat > "\$html" <<'EOF'
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <title>Metatropics Results Summary</title>
-  </head>
-  <body>
-    <h1>Metatropics Results Summary</h1>
-    <p>No confident hits were found (no <code>*_final_selected_references.json</code> files present).</p>
-  </body>
-</html>
-EOF
-      cat > versions.yml <<'END_VERSIONS'
-"${task.process}":
-    virasign: \$(virasign --version 2>&1 | head -n1 || echo 'unknown')
-END_VERSIONS
-      exit 0
     fi
 
     # virasign --build-html always opens OUT/.virasign.log for writing; remove stale/root-owned log first.
@@ -181,6 +153,7 @@ from pathlib import Path
 
 out = Path(os.environ["OUT"])
 target_acc = os.environ.get("TARGET_ACCESSION", "").strip()
+prefer_label = os.environ.get("VIRASIGN_DB_LABEL", "").strip()
 out_html = Path(os.environ["OUT_HTML"])
 out_csv = Path(os.environ["OUT_CSV"])
 
@@ -194,8 +167,13 @@ def accession_col(fieldnames):
     return None
 
 def score_csv(path: Path) -> tuple:
+    """Return (matched_or_total_hits, total_with_accession, label_preference, name).
+
+    Zero-hit CSVs are valid (empty viral detection report with full HTML layout).
+    """
+    label_pref = 1 if (prefer_label and path.stem.endswith("_" + prefer_label)) else 0
     if not path.is_file():
-        return (0, 0)
+        return (0, 0, label_pref, path.name)
     try:
         with path.open("r", newline="", encoding="utf-8") as handle:
             reader = csv.DictReader(handle)
@@ -210,28 +188,25 @@ def score_csv(path: Path) -> tuple:
                 if target_acc and acc == target_acc:
                     matched += 1
             if target_acc:
-                return (matched, total)
-            return (total, total)
+                return (matched, total, label_pref, path.name)
+            return (total, total, label_pref, path.name)
     except Exception:
-        return (0, 0)
+        return (0, 0, label_pref, path.name)
 
 candidates = sorted(out.glob("results_summary_*.csv"))
 if not candidates:
     raise SystemExit(f"ERROR: no results_summary_*.csv under {out}")
 
 best = None
-best_key = (-1, -1)
+best_key = (-1, -1, -1, "")
 for csv_path in candidates:
     key = score_csv(csv_path)
     if key > best_key:
         best_key = key
         best = csv_path
 
-if best is None or best_key[0] <= 0:
-    raise SystemExit(
-        f"ERROR: virasign --build-html produced no confident hits in any summary CSV under {out}"
-        + (f" (target accession {target_acc})" if target_acc else "")
-    )
+if best is None:
+    raise SystemExit(f"ERROR: could not select a results_summary_*.csv under {out}")
 
 html_path = best.with_suffix(".html")
 if not html_path.is_file():
@@ -239,7 +214,11 @@ if not html_path.is_file():
 
 out_html.write_bytes(html_path.read_bytes())
 out_csv.write_bytes(best.read_bytes())
-print(f"Selected summary: {html_path.name} (hits={best_key[0]}, total_with_accession={best_key[1]})")
+print(
+    f"Selected summary: {html_path.name} "
+    f"(hits={best_key[0]}, total_with_accession={best_key[1]})"
+    + ("; no viral hits — keeping full empty layout" if best_key[0] <= 0 else "")
+)
 PY
 
 # Compute consensus-derived breadth from draft consensus FASTA and merge into summary CSV.

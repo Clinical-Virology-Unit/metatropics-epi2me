@@ -268,9 +268,9 @@
                 "epi2me_publish_reads": {
                     "type": "boolean",
                     "default": false,
-                    "title": "Reads",
-                    "description": "Publish intermediate Reads folder.",
-                    "help_text": "Off by default. When enabled, keeps QC and host-depleted FASTQs under Reads/. Works for all input modes (demultiplexed_fastq, fastq_pass, pod5)."
+                    "title": "Publish reads and NanoPlot",
+                    "description": "Publish intermediate Reads folder (FASTQs and NanoPlot reports).",
+                    "help_text": "Off by default. When enabled, keeps QC/host-depleted FASTQs and NanoPlot reports under Reads/. When off, only per-sample fastplong HTML reports are kept under Reads/fastplong/. Works for all input modes (demultiplexed_fastq, fastq_pass, pod5)."
                 },
                 "epi2me_publish_bam": {
                     "type": "boolean",

@@ -27,7 +27,7 @@ After a run you get three folders:
 | Consensus/ | Consensus viral genomes (FASTA) |
 | Variant_calling/ | Variant calls (VCF + HTML report per virus) |
 
-By default, intermediate folders Reads/ and Classification/ are not kept in EPI2ME runs. In Advanced options, enable Reads and/or BAM independently if you need QC/host-depleted FASTQs or Virasign classification BAMs. For a full description of every output file, see the [Metatropics output guide](https://github.com/Clinical-Virology-Unit/Metatropics/blob/main/nf-metatropics/assets/output/README.md).
+By default, intermediate folders Reads/ and Classification/ are not kept in EPI2ME runs (except per-sample fastplong HTML under Reads/fastplong/). In Advanced options, enable **Publish reads and NanoPlot** and/or **BAM** independently if you need QC/host-depleted FASTQs, NanoPlot reports, or Virasign classification BAMs. For a full description of every output file, see the [Metatropics output guide](https://github.com/Clinical-Virology-Unit/Metatropics/blob/main/nf-metatropics/assets/output/README.md).
 
 ## Citation
 
