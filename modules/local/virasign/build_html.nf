@@ -46,7 +46,9 @@ process VIRASIGN_SUMMARY {
     input:
     val _consensus_count
     val _virasign_results_count
-    path consensus_fastas
+    // Barrier / optional consensus FASTAs. When zero viral hits, Clair3/consensus never run —
+    // the workflow passes assets/NO_CONSENSUS.placeholder instead of an empty path list.
+    path consensus_fastas, stageAs: 'consensus/*'
 
     output:
     path "Metatropics_Summary_*.html", emit: html
@@ -842,33 +844,37 @@ if summary_html.exists():
         "Human viral pathogen identification from nanopore metagenomic sequencing",
     )
 
-    # Virasign --build-html leaves metadata.filtering_criteria empty; patch from pipeline params
-    # so the report header shows the thresholds actually used during classification.
+    # Virasign --build-html often leaves metadata.filtering_criteria / database_used empty
+    # (especially with zero hits). Patch from pipeline params so the config panel matches the
+    # header Database label. Empty database_used makes Virasign JS fall through to "Custom".
     filtering_criteria = ${filtering_criteria_json}
     database_used = ${database_used_json}
-    if filtering_criteria:
-        marker = "const samplesData = "
-        idx = text.find(marker)
-        if idx != -1:
-            start = idx + len(marker)
-            heat_idx = text.find("const heatmapData", start)
-            end = text.rfind(";", start, heat_idx) if heat_idx != -1 else -1
-            if end != -1:
-                try:
-                    data = json.loads(text[start:end])
-                    for sample_data in data.values():
-                        if not isinstance(sample_data, dict):
+    database_source = ${virasign_db_label_json}
+    marker = "const samplesData = "
+    idx = text.find(marker)
+    if idx != -1:
+        start = idx + len(marker)
+        heat_idx = text.find("const heatmapData", start)
+        end = text.rfind(";", start, heat_idx) if heat_idx != -1 else -1
+        if end != -1:
+            try:
+                data = json.loads(text[start:end])
+                for sample_data in data.values():
+                    if not isinstance(sample_data, dict):
+                        continue
+                    for db_block in sample_data.values():
+                        if not isinstance(db_block, dict):
                             continue
-                        for db_block in sample_data.values():
-                            if not isinstance(db_block, dict):
-                                continue
-                            meta = db_block.setdefault("metadata", {})
+                        meta = db_block.setdefault("metadata", {})
+                        if filtering_criteria:
                             meta["filtering_criteria"] = dict(filtering_criteria)
-                            if database_used:
-                                meta["database_used"] = database_used
-                    text = text[:start] + json.dumps(data, separators=(",", ":")) + text[end:]
-                except Exception as exc:
-                    print(f"WARNING: could not patch filtering_criteria in summary HTML: {exc}", file=sys.stderr)
+                        if database_used:
+                            meta["database_used"] = database_used
+                        if database_source:
+                            meta["database_source"] = database_source
+                text = text[:start] + json.dumps(data, separators=(",", ":")) + text[end:]
+            except Exception as exc:
+                print(f"WARNING: could not patch database/filtering metadata in summary HTML: {exc}", file=sys.stderr)
 
 
     # If the pipeline is re-run, remove any previously injected consensus panel.

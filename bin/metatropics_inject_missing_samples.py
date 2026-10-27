@@ -143,9 +143,11 @@ def inject_html(
     if not isinstance(all_obj, list):
         all_obj = []
 
+    # Prefer a real metadata block from the report; fall back to the pipeline db label.
+    # Empty database_used makes the Virasign HTML JS display "Custom".
     meta_template = {
         "database_source": db_label,
-        "database_used": "",
+        "database_used": db_label,
         "filtering_criteria": {},
     }
     for dbs in samples_obj.values():
@@ -154,7 +156,24 @@ def inject_html(
         payload = dbs.get(db_label) or next(iter(dbs.values()), None)
         if isinstance(payload, dict) and isinstance(payload.get("metadata"), dict):
             meta_template = dict(payload["metadata"])
+            if not str(meta_template.get("database_used") or "").strip():
+                meta_template["database_used"] = db_label
+            if not str(meta_template.get("database_source") or "").strip():
+                meta_template["database_source"] = db_label
             break
+
+    # Also fix empty database_* on samples already present in the HTML.
+    for dbs in samples_obj.values():
+        if not isinstance(dbs, dict):
+            continue
+        for payload in dbs.values():
+            if not isinstance(payload, dict):
+                continue
+            meta = payload.setdefault("metadata", {})
+            if not str(meta.get("database_used") or "").strip():
+                meta["database_used"] = db_label
+            if not str(meta.get("database_source") or "").strip():
+                meta["database_source"] = db_label
 
     existing_sections = set(re.findall(r'id="sample-([^"]+)"', text))
     existing_options = set(re.findall(r'<option value="([^"]+)">', text))

@@ -328,15 +328,20 @@ workflow METATROPICS {
 
     CONSENSUS_BCFTOOLS( ch_consensus_in )
 
-    // Build final Metatropics summary only after all Virasign jobs finished and results are in outdir.
+    // Build final Metatropics summary after all Virasign jobs finished (and consensus if any hits).
+    // Do not gate on CONSENSUS_BCFTOOLS alone: with zero viral hits that process never runs, and
+    // waiting on its .count() would skip the Metatropics HTML entirely.
     def ch_virasign_done = VIRASIGN_CLASSIFICATION.out.results.count()
+    def ch_consensus_placeholder = file("${projectDir}/assets/NO_CONSENSUS.placeholder")
+    def ch_consensus_fastas = CONSENSUS_BCFTOOLS.out.fasta
+        .map { meta, fasta -> fasta }
+        .collect()
+        .ifEmpty([ ch_consensus_placeholder ])
 
     METATROPICS_SUMMARY(
-        CONSENSUS_BCFTOOLS.out.fasta.count().combine(ch_virasign_done).map { row -> row[0] },
         ch_virasign_done,
-        CONSENSUS_BCFTOOLS.out.fasta
-            .map { meta, fasta -> fasta }
-            .collect()
+        ch_virasign_done,
+        ch_consensus_fastas
     )
 
     ch_versions = ch_versions.mix(FASTPLONG.out.versions.first())
@@ -344,9 +349,11 @@ workflow METATROPICS {
     if (params.run_virasign) {
         ch_versions = ch_versions.mix(VIRASIGN_DB.out.versions)
     }
-    ch_versions = ch_versions.mix(CLAIR3_VARIANTS.out.versions.first())
-    ch_versions = ch_versions.mix(CLAIR3_POSTPROCESSING.out.versions.first())
-    ch_versions = ch_versions.mix(CONSENSUS_BCFTOOLS.out.versions.first())
+    // Clair3/consensus only run when there is ≥1 viral hit; empty channels just add nothing.
+    // Do not use .first() here — that hangs when those processes never execute.
+    ch_versions = ch_versions.mix(CLAIR3_VARIANTS.out.versions)
+    ch_versions = ch_versions.mix(CLAIR3_POSTPROCESSING.out.versions)
+    ch_versions = ch_versions.mix(CONSENSUS_BCFTOOLS.out.versions)
     if (resolvedHumanHostFasta) {
         ch_versions = ch_versions.mix(HUMAN_MAPPING.out.versionsmini)
         ch_versions = ch_versions.mix(HUMAN_MAPPING.out.versionssamsort)

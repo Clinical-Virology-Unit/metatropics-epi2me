@@ -11,7 +11,7 @@
             "title": "Input options",
             "type": "object",
             "fa_icon": "fas fa-arrow-right",
-            "description": "Select input mode and folder containing your sequencing data.",
+            "description": "Select input mode and reads (folder, or a single FASTQ in demultiplexed_fastq mode).",
             "properties": {
                 "input_mode": {
                     "type": "string",
@@ -29,8 +29,8 @@
                     "type": "string",
                     "title": "Reads",
                     "format": "path",
-                    "description": "Folder containing your sequencing data.",
-                    "help_text": "For fastq_pass, select the run folder or fastq_pass subfolder. For pod5, select the folder with POD5 files. For demultiplexed FASTQ, select the folder with FASTQ files or barcode subfolders."
+                    "description": "Folder or single FASTQ with your sequencing data.",
+                    "help_text": "For demultiplexed_fastq: select a folder of FASTQs/barcode folders, or one FASTQ file. For fastq_pass: select the run folder or fastq_pass subfolder. For pod5: select the folder with POD5 files."
                 },
                 "sample_sheet": {
                     "type": "string",

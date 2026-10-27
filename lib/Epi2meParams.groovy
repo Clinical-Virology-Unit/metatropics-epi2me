@@ -140,32 +140,54 @@ class Epi2meParams {
     }
 
     static String resolveReadsPath(String reads, String inputMode) {
-        def dir = new File(reads)
-        if (!dir.exists()) {
+        def path = new File(reads)
+        if (!path.exists()) {
             throw new IllegalArgumentException("reads path not found: ${reads}")
         }
-        if (!dir.isDirectory()) {
-            throw new IllegalArgumentException("reads must be a directory: ${reads}")
+
+        // demultiplexed_fastq: allow a single FASTQ file or a directory of FASTQs/barcode folders.
+        if (path.isFile()) {
+            if (inputMode != 'demultiplexed_fastq') {
+                throw new IllegalArgumentException(
+                    "reads must be a directory for input_mode=${inputMode} (got a file): ${reads}"
+                )
+            }
+            if (!isFastq(path.name)) {
+                throw new IllegalArgumentException(
+                    "reads file must be a FASTQ (.fastq/.fq[.gz]): ${reads}"
+                )
+            }
+            return path.absolutePath
+        }
+
+        if (!path.isDirectory()) {
+            throw new IllegalArgumentException("reads must be a directory or FASTQ file: ${reads}")
         }
 
         if (inputMode == 'fastq_pass') {
-            def fastqPass = new File(dir, 'fastq_pass')
+            def fastqPass = new File(path, 'fastq_pass')
             if (fastqPass.isDirectory()) {
                 return fastqPass.absolutePath
             }
         }
 
         if (inputMode == 'pod5') {
-            def pod5Pass = new File(dir, 'pod5_pass')
+            def pod5Pass = new File(path, 'pod5_pass')
             if (pod5Pass.isDirectory()) {
                 return pod5Pass.absolutePath
             }
         }
 
-        return dir.absolutePath
+        return path.absolutePath
     }
 
     private static void generateSamplesheet(String inputMode, String readsPath, File out, String repoRoot, def log) {
+        def readsFile = new File(readsPath)
+        if (inputMode == 'demultiplexed_fastq' && readsFile.isFile()) {
+            writeSingleFastqSheet(readsFile, out, log)
+            return
+        }
+
         if (inputMode == 'demultiplexed_fastq') {
             if (writeBarcodeFolderSheet(readsPath, out, log)) {
                 return
@@ -193,6 +215,22 @@ class Epi2meParams {
         if (output?.trim()) {
             log.info output.trim()
         }
+    }
+
+    private static void writeSingleFastqSheet(File fq, File out, def log) {
+        def sample = fq.name
+        for (String suf : FASTQ_SUFFIXES) {
+            def lower = sample.toLowerCase()
+            if (lower.endsWith(suf)) {
+                sample = sample.substring(0, sample.length() - suf.length())
+                break
+            }
+        }
+        if (!sample) {
+            sample = 'sample'
+        }
+        writeCsv(out, [[sample, fq.absolutePath]])
+        log.info "Wrote 1 sample from single FASTQ to ${out.absolutePath}"
     }
 
     private static boolean writeBarcodeFolderSheet(String readsPath, File out, def log) {
