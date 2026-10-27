@@ -167,10 +167,7 @@ def accession_col(fieldnames):
     return None
 
 def score_csv(path: Path) -> tuple:
-    """Return (matched_or_total_hits, total_with_accession, label_preference, name).
-
-    Zero-hit CSVs are valid (empty viral detection report with full HTML layout).
-    """
+    # Tuple: hits, total_with_accession, label_preference, name. Zero-hit CSVs are valid.
     label_pref = 1 if (prefer_label and path.stem.endswith("_" + prefer_label)) else 0
     if not path.is_file():
         return (0, 0, label_pref, path.name)
