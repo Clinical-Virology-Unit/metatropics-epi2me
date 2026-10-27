@@ -55,6 +55,37 @@ def epi2meTrimDir(String outdir, String sub) {
     }
 }
 
+// EPI2ME default: drop bulky Reads/ FASTQs, but keep per-sample fastplong QC HTML.
+def epi2meTrimReadsKeepFastplongHtml(String outdir) {
+    def target = new File(outdir, 'Reads')
+    if (!target.exists()) {
+        log.info "EPI2ME: skip ${target.absolutePath} (not present)"
+        return
+    }
+    new ProcessBuilder(
+        'bash', '-c',
+        '''chmod -R u+w "$1" 2>/dev/null || true
+        find "$1" -type f ! \\( -path "$1/fastplong/*" -name "*.fastplong.html" \\) -delete 2>/dev/null || true
+        find "$1" -depth -type d -empty -delete 2>/dev/null || true
+        exit 0''',
+        'bash', target.absolutePath
+    ).start().waitFor()
+    def htmlLeft = 0
+    def fp = new File(target, 'fastplong')
+    if (fp.isDirectory()) {
+        fp.eachFileRecurse { f ->
+            if (f.isFile() && f.name.endsWith('.fastplong.html')) htmlLeft++
+        }
+    }
+    if (htmlLeft > 0) {
+        log.info "EPI2ME: trimmed Reads/ (kept ${htmlLeft} fastplong HTML report(s))"
+    } else if (target.exists()) {
+        log.warn "EPI2ME: trimmed Reads/ but no fastplong HTML remained under ${target.absolutePath}"
+    } else {
+        log.info "EPI2ME: removed ${target.absolutePath}"
+    }
+}
+
 /* Main workflow */
 
 
@@ -340,7 +371,7 @@ workflow.onComplete {
         outdir = (params.outdir ?: params.out_dir)?.toString()?.trim()
         if (outdir) {
             if (!Epi2meParams.publishReads(params)) {
-                epi2meTrimDir(outdir, 'Reads')
+                epi2meTrimReadsKeepFastplongHtml(outdir)
             }
             if (!Epi2meParams.publishBam(params)) {
                 epi2meTrimDir(outdir, 'Classification')
