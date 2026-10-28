@@ -7,9 +7,11 @@ process VIRASIGN_SUMMARY {
         'daanjansen94/virasign:v0.1.3' }"
 
     // Bind outdir and read results via params.
+    // Use VirasignDb.databaseDir (same as prepare_db/classification) — never projectDir.parent,
+    // which created an empty sibling Databases/ next to the workflow folder.
     def outAbs = file(params.outdir ?: params.out_dir).toAbsolutePath().toString()
-    def pipelineRoot = new File("${projectDir}").parentFile.absolutePath
-    def db_dir = params.virasign_db_dir ?: "${pipelineRoot}/Databases"
+    def pipelineRoot = projectDir.toString()
+    def db_dir = VirasignDb.databaseDir(params, pipelineRoot)
     def dbAbs = file(db_dir).toAbsolutePath().toString()
 
     // Ensure any control/blind files are visible in-container.
