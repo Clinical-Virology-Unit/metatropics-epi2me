@@ -208,8 +208,8 @@
                 "epi2me_blind_custom": {
                     "type": "string",
                     "title": "Additional species to blind",
-                    "description": "Optional. Use official NCBI Taxonomy species names (https://www.ncbi.nlm.nih.gov/taxonomy), comma-separated. Example: Measles morbillivirus, Zika virus",
-                    "help_text": "Leave empty if the checkboxes above are enough. Names must match official taxonomy (look up species on the NCBI Taxonomy Browser). Multiple names: separate with commas."
+                    "description": "Optional. Use official ICTV species names (NCBI Taxonomy Browser: https://www.ncbi.nlm.nih.gov/taxonomy), comma-separated — not organism/common names. Example: Morbillivirus hominis, Orthoflavivirus zikaense",
+                    "help_text": "Enter the species taxon (e.g. Morbillivirus hominis), not the organism/virus name (e.g. measles virus / Measles morbillivirus). Look up names on the NCBI Taxonomy Browser. Multiple names: separate with commas."
                 }
             }
         },
