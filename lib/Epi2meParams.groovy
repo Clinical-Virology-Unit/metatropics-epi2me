@@ -53,6 +53,8 @@ class Epi2meParams {
                 codes << abbrev
             }
         }
+        // Free-text official taxonomy names from EPI2ME (comma-separated).
+        collectBlindTokens(params.epi2me_blind_custom, codes)
         collectBlindTokens(params.epi2me_blind_species, codes)
         // Legacy/CLI: species abbreviations (not a file path).
         def legacy = params.virasign_blind?.toString()?.trim()

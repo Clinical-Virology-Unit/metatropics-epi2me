@@ -204,6 +204,12 @@
                     "type": "boolean",
                     "title": "Blind Human papillomavirus (all types)",
                     "default": false
+                },
+                "epi2me_blind_custom": {
+                    "type": "string",
+                    "title": "Additional species to blind",
+                    "description": "Optional. Use official NCBI Taxonomy species names (https://www.ncbi.nlm.nih.gov/taxonomy), comma-separated. Example: Measles morbillivirus, Zika virus",
+                    "help_text": "Leave empty if the checkboxes above are enough. Names must match official taxonomy (look up species on the NCBI Taxonomy Browser). Multiple names: separate with commas."
                 }
             }
         },
