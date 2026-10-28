@@ -6,8 +6,30 @@ import java.security.MessageDigest
 
 class VirasignDb {
 
+    static boolean specifyOwnDbLocation(Map params) {
+        def flag = params.epi2me_specify_db_location
+        return (flag == true) ||
+            ['true', '1', 'yes', 'y', 'on'].contains(flag?.toString()?.trim()?.toLowerCase())
+    }
+
+    /**
+     * Shared Databases/ root for Virasign + host references.
+     * Priority: explicit --virasign_db_dir → EPI2ME custom parent/Databases → <project>/Databases.
+     * Note: do not assign back into params.virasign_db_dir (Nextflow ignores reassignment when
+     * the key is already defined in nextflow.config).
+     */
     static String databaseDir(Map params, String projectDir) {
-        params.virasign_db_dir ?: "${projectDir}/Databases"
+        def explicit = params.virasign_db_dir?.toString()?.trim()
+        if (explicit) {
+            return explicit
+        }
+        if (specifyOwnDbLocation(params)) {
+            def root = params.epi2me_db_location?.toString()?.trim() ?: '/home/user/data'
+            def rootFile = new File(root)
+            def dbDir = rootFile.name.equalsIgnoreCase('Databases') ? rootFile : new File(rootFile, 'Databases')
+            return dbDir.absolutePath
+        }
+        return "${projectDir}/Databases"
     }
 
     /** Directory passed to virasign `--db-dir` (shared Databases root for all kinds). */

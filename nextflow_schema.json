@@ -137,6 +137,21 @@
                     "default": false,
                     "description": "Enable Virasign ultrasensitive mode.",
                     "help_text": "More sensitive viral detection; slower and may increase false positives. Leave off unless you need maximum sensitivity."
+                },
+                "epi2me_specify_db_location": {
+                    "type": "boolean",
+                    "title": "Specify own database location",
+                    "default": false,
+                    "description": "Store/reuse Databases outside the workflow folder.",
+                    "help_text": "Off by default: Databases live under the installed workflow (re-downloaded after re-import). On: use Database location below (creates <path>/Databases if missing) for RVDB/RefSeq/Custom and host genomes, so re-importing the workflow does not force a full re-download."
+                },
+                "epi2me_db_location": {
+                    "type": "string",
+                    "title": "Database location",
+                    "format": "directory-path",
+                    "default": "/home/user/data",
+                    "description": "Parent folder for Databases/ (only used when Specify own database location is on).",
+                    "help_text": "Ignored unless Specify own database location is enabled. Default /home/user/data → uses /home/user/data/Databases. If you already point at a folder named Databases, that folder is used as-is."
                 }
             },
             "description": "Choose the viral reference database."

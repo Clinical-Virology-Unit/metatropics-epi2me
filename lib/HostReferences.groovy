@@ -268,7 +268,8 @@ class HostReferences {
             return [ human: null, other: null ]
         }
 
-        Path dbRoot = Path.of(baseDir.toString(), 'Databases')
+        // Prefer params.virasign_db_dir when set (EPI2ME custom Databases location).
+        Path dbRoot = Path.of(VirasignDb.databaseDir(params, baseDir.toString()))
         Files.createDirectories(dbRoot)
 
         Path humanPath = null

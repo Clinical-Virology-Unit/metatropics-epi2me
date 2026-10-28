@@ -19,7 +19,22 @@ class Epi2meParams {
         !isEpi2me(params) || params.epi2me_publish_bam
     }
 
+    /**
+     * Ensure the resolved Databases/ root exists and log it when using a custom EPI2ME location
+     * (or an explicit --virasign_db_dir). Does not mutate params (Nextflow ignores reassignment).
+     */
+    static void applyDbLocation(Map params, String projectDir, def log) {
+        def dbDir = new File(VirasignDb.databaseDir(params, projectDir))
+        def custom = VirasignDb.specifyOwnDbLocation(params) || params.virasign_db_dir?.toString()?.trim()
+        if (custom) {
+            dbDir.mkdirs()
+            log.info "EPI2ME Databases location: ${dbDir.absolutePath}"
+        }
+    }
+
     static String apply(Map params, String repoRoot, def log) {
+        applyDbLocation(params, repoRoot, log)
+
         if (!params.reads?.toString()?.trim()) {
             return null
         }
