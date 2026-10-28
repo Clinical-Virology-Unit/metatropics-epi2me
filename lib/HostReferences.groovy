@@ -248,10 +248,15 @@ class HostReferences {
     ].asImmutable()
 
     static Map resolve(params, log, baseDir) {
-        def requested = normaliseHostParam(params.Host)
+        // Merge Host + Host_additional here (do not rely on mutating params.Host —
+        // Nextflow ignores reassignment of keys defined in nextflow.config).
+        def requested = (
+            normaliseHostParam(params.Host) + normaliseHostParam(params.Host_additional)
+        ).unique()
         if (!requested) {
             return [ human: null, other: null ]
         }
+        log.info "Host depletion requested: ${requested.join(', ')}"
 
         // Don't download large references when printing help/version
         if (params.help || params.version) {

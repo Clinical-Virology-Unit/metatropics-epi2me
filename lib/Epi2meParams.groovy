@@ -228,6 +228,11 @@ class Epi2meParams {
         'camel', 'goat', 'pig', 'cow', 'mouse', 'chicken',
     ]
 
+    /**
+     * Log EPI2ME Host + Host_additional selections only.
+     * Do not assign back into params.Host — Nextflow ignores that, and
+     * HostReferences.resolve() already merges both params.
+     */
     private static void applyHostSelections(Map params, def log) {
         def selected = []
 
@@ -248,10 +253,7 @@ class Epi2meParams {
 
         selected = selected.unique()
         if (selected) {
-            params.Host = selected.size() == 1 ? selected[0] : selected
             log.info "EPI2ME host depletion: ${selected.join(', ')}"
-        } else {
-            params.Host = null
         }
     }
 
