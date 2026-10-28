@@ -28,7 +28,11 @@ process VIRASIGN_CLASSIFICATION {
             if (fp.exists()) addBindDir(tok)
         }
     }
-    addBindDir(params.virasign_blind?.toString()?.trim())
+    // Only bind when legacy --virasign_blind points at a real path (species codes need no bind).
+    def blindBind = params.virasign_blind?.toString()?.trim()
+    if (blindBind && Epi2meParams.looksLikeFilesystemPath(blindBind)) {
+        addBindDir(blindBind)
+    }
     extraBindDirs = extraBindDirs.unique()
 
     if (workflow.containerEngine == 'docker' || workflow.containerEngine == 'podman') {
@@ -142,7 +146,8 @@ process VIRASIGN_CLASSIFICATION {
     add(params.virasign_no_gzip_fastq == true, '--no-gzip-fastq')
     add(!!params.virasign_zscore, "--zscore ${params.virasign_zscore}")
     add(params.virasign_zscore_controls?.toString()?.trim(), "--zscore-controls '${params.virasign_zscore_controls}'")
-    add(params.virasign_blind?.toString()?.trim(), "-b '${params.virasign_blind}'")
+    blindSpecies = Epi2meParams.blindSpeciesArg(params)
+    add(blindSpecies as boolean, "-b '${blindSpecies}'")
 
     def tail = task.ext.args?.toString()?.trim()
     // No `def`: interpolates process-scoped virasign_db_dir (Nextflow 23.04).

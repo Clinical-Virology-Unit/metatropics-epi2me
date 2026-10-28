@@ -32,6 +32,113 @@ class Epi2meParams {
         }
     }
 
+    /**
+     * Virasign -b argument: EPI2ME multi-select (epi2me_blind_species) and/or CLI --virasign_blind.
+     * Does not mutate params (Nextflow may ignore reassignment of config keys).
+     * Accepts List (EPI2ME array), comma-separated string, or null/empty (= no blinding).
+     */
+    static String blindSpeciesArg(Map params) {
+        def codes = []
+        collectBlindTokens(params.epi2me_blind_species, codes)
+        // Legacy/CLI: species abbreviations (not a file path).
+        def legacy = params.virasign_blind?.toString()?.trim()
+        if (legacy && !looksLikeFilesystemPath(legacy)) {
+            collectBlindTokens(legacy, codes)
+        }
+        return codes.unique(false).join(',')
+    }
+
+    // EPI2ME shows "HIV - Human immunodeficiency virus (...)"; Virasign -b needs HIV/HEP/...
+    private static final List<String> BLIND_ABBREVS = ['HIV', 'HEP', 'HTLV', 'EBV', 'CMV', 'HPV']
+
+    private static void collectBlindTokens(Object value, List codes) {
+        if (value == null) {
+            return
+        }
+        // EPI2ME multi-select: each list item is one labeled enum (may contain commas in the name).
+        if (value instanceof Collection) {
+            value.each { item ->
+                def code = normalizeBlindAbbreviation(item?.toString())
+                if (code) {
+                    codes << code
+                }
+            }
+            return
+        }
+        def raw = value.toString().trim()
+        if (!raw || raw.equalsIgnoreCase('none') || raw == '[]') {
+            return
+        }
+        raw = raw.replaceAll(/^\[|\]$/, '').trim()
+        // Labeled single value ("HEP - All hepatitis viruses (HAV-HEV, incl. HBV/HCV)") — do not split on commas.
+        if (raw.contains(' - ') || raw.contains(' – ') || raw.contains(' — ')) {
+            def code = normalizeBlindAbbreviation(raw)
+            if (code) {
+                codes << code
+            }
+            return
+        }
+        // CLI: comma-separated short codes (HIV,HEP,HTLV)
+        raw.split(',').each { tok ->
+            def code = normalizeBlindAbbreviation(tok?.toString()?.trim())
+            if (code) {
+                codes << code
+            }
+        }
+    }
+
+    /**
+     * Map EPI2ME labeled enum / short code / full species name → Virasign abbreviation.
+     */
+    static String normalizeBlindAbbreviation(String raw) {
+        if (!raw) {
+            return null
+        }
+        def t = raw.trim()
+        if (!t || t.equalsIgnoreCase('none')) {
+            return null
+        }
+        // "HIV - Human immunodeficiency virus (...)" or "HIV — ..."
+        def head = t.split(/\s*[-–—]\s*/, 2)[0].trim()
+        def upperHead = head.toUpperCase()
+        if (BLIND_ABBREVS.contains(upperHead)) {
+            return upperHead
+        }
+        // Bare abbreviation
+        def upper = t.toUpperCase()
+        if (BLIND_ABBREVS.contains(upper)) {
+            return upper
+        }
+        // Leading token before space/paren: "HIV (Human ...)"
+        def m = (t =~ /^([A-Za-z]+)\b/)
+        if (m.find()) {
+            def tok = m.group(1).toUpperCase()
+            if (BLIND_ABBREVS.contains(tok)) {
+                return tok
+            }
+        }
+        // Pass through unrecognized values (full species names still valid for Virasign -b)
+        return t
+    }
+
+    static boolean looksLikeFilesystemPath(String value) {
+        if (!value) {
+            return false
+        }
+        if (value.contains('/') || value.contains('\\')) {
+            return true
+        }
+        def f = new File(value)
+        return f.exists()
+    }
+
+    static void logBlinding(Map params, def log) {
+        def blind = blindSpeciesArg(params)
+        if (blind) {
+            log.info "Blinding incidental findings: ${blind}"
+        }
+    }
+
     static String apply(Map params, String repoRoot, def log) {
         applyDbLocation(params, repoRoot, log)
 

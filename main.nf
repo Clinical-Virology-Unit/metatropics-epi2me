@@ -5,6 +5,7 @@ nextflow.enable.dsl = 2
 
 // Optional persistent Databases/ root (EPI2ME "Specify own database location").
 Epi2meParams.applyDbLocation(params, projectDir.toString(), log)
+Epi2meParams.logBlinding(params, log)
 
 def epi2meInput = Epi2meParams.apply(params, projectDir.toString(), log)
 if (epi2meInput) {

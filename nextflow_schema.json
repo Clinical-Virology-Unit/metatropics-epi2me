@@ -169,6 +169,33 @@
                 }
             }
         },
+        "blinding_options": {
+            "title": "Blinding",
+            "type": "object",
+            "fa_icon": "fas fa-eye-slash",
+            "description": "Optional blinding of incidental findings.",
+            "properties": {
+                "epi2me_blind_species": {
+                    "type": "array",
+                    "title": "Species to blind",
+                    "description": "Hide selected viruses from all Virasign outputs (incidental findings).",
+                    "help_text": "Leave empty for no blinding. Multi-select one or more entries (abbreviation + full name). HEP covers all hepatitis viruses (HAV-HEV, including HBV/HCV).",
+                    "default": [],
+                    "uniqueItems": true,
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "HIV - Human immunodeficiency virus (HIV-1, HIV-2)",
+                            "HEP - All hepatitis viruses (HAV-HEV, incl. HBV/HCV)",
+                            "HTLV - Human T-lymphotropic virus (HTLV-1, HTLV-2)",
+                            "EBV - Epstein-Barr virus (Human herpesvirus 4)",
+                            "CMV - Cytomegalovirus (Human herpesvirus 5)",
+                            "HPV - Human papillomavirus (all types)"
+                        ]
+                    }
+                }
+            }
+        },
         "host_options": {
             "title": "Host depletion",
             "type": "object",
@@ -306,6 +333,9 @@
         },
         {
             "$ref": "#/definitions/output_options"
+        },
+        {
+            "$ref": "#/definitions/blinding_options"
         },
         {
             "$ref": "#/definitions/host_options"

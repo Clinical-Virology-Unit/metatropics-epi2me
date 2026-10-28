@@ -30,7 +30,10 @@ process VIRASIGN_SUMMARY {
             if (fp.exists()) addBindDir(tok)
         }
     }
-    addBindDir(params.virasign_blind?.toString()?.trim())
+    def blindBind = params.virasign_blind?.toString()?.trim()
+    if (blindBind && Epi2meParams.looksLikeFilesystemPath(blindBind)) {
+        addBindDir(blindBind)
+    }
     // Samplesheet so the summary can include input samples that never reached Virasign
     // (e.g. empty after host depletion, or dropped by an optional upstream output).
     addBindDir((params.input ?: params.epi2me_samplesheet ?: params.sample_sheet)?.toString()?.trim())
@@ -71,7 +74,7 @@ process VIRASIGN_SUMMARY {
     zscore = params.virasign_zscore ?: 'true'
     zscore_controls = params.virasign_zscore_controls?.toString()?.trim()
     zscore_controls_safe = zscore_controls ?: ''
-    virasign_blind_safe = params.virasign_blind?.toString()?.trim() ?: ''
+    virasign_blind_safe = Epi2meParams.blindSpeciesArg(params)
     zscore_json = groovy.json.JsonOutput.toJson(zscore?.toString()?.trim() ?: 'false')
     zscore_controls_json = groovy.json.JsonOutput.toJson(zscore_controls_safe)
     virasign_blind_json = groovy.json.JsonOutput.toJson(virasign_blind_safe)
@@ -256,9 +259,9 @@ else:
         zscore_water_msg = "Water controls: auto-detected by Virasign (no --zscore-controls provided)."
 
 if virasign_blind_text:
-    blind_msg = f"Blind/background file (explicit --virasign_blind): {virasign_blind_text}"
+    blind_msg = f"Blinding incidental findings (-b): {virasign_blind_text}"
 else:
-    blind_msg = "Blind/background file: not provided (Virasign uses defaults/auto when needed)."
+    blind_msg = "Blinding: none (all detected viruses reported)."
 
 # If Virasign couldn't compute Z-scores due to missing/insufficient water controls,
 # the produced summary CSV will have an empty Z-score column.
