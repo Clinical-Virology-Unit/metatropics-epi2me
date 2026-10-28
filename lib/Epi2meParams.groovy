@@ -32,13 +32,27 @@ class Epi2meParams {
         }
     }
 
+    // EPI2ME checkbox params (booleans render reliably; array multi-select often does not).
+    private static final Map BLIND_CHECKBOXES = [
+        epi2me_blind_hiv : 'HIV',
+        epi2me_blind_hep : 'HEP',
+        epi2me_blind_htlv: 'HTLV',
+        epi2me_blind_ebv : 'EBV',
+        epi2me_blind_cmv : 'CMV',
+        epi2me_blind_hpv : 'HPV',
+    ]
+
     /**
-     * Virasign -b argument: EPI2ME multi-select (epi2me_blind_species) and/or CLI --virasign_blind.
+     * Virasign -b argument from EPI2ME checkboxes and/or CLI --virasign_blind / epi2me_blind_species.
      * Does not mutate params (Nextflow may ignore reassignment of config keys).
-     * Accepts List (EPI2ME array), comma-separated string, or null/empty (= no blinding).
      */
     static String blindSpeciesArg(Map params) {
         def codes = []
+        BLIND_CHECKBOXES.each { paramName, abbrev ->
+            if (isTruthy(params[paramName])) {
+                codes << abbrev
+            }
+        }
         collectBlindTokens(params.epi2me_blind_species, codes)
         // Legacy/CLI: species abbreviations (not a file path).
         def legacy = params.virasign_blind?.toString()?.trim()
@@ -46,6 +60,16 @@ class Epi2meParams {
             collectBlindTokens(legacy, codes)
         }
         return codes.unique(false).join(',')
+    }
+
+    static boolean isTruthy(Object flag) {
+        if (flag == null) {
+            return false
+        }
+        if (flag instanceof Boolean) {
+            return flag
+        }
+        return ['true', '1', 'yes', 'y', 'on'].contains(flag.toString().trim().toLowerCase())
     }
 
     // EPI2ME shows "HIV - Human immunodeficiency virus (...)"; Virasign -b needs HIV/HEP/...
