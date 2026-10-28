@@ -178,38 +178,32 @@
                 "epi2me_blind_hiv": {
                     "type": "boolean",
                     "title": "Blind Human immunodeficiency virus (HIV-1/HIV-2)",
-                    "default": false,
-                    "description": "Blind Human immunodeficiency virus (HIV-1/HIV-2)."
+                    "default": false
                 },
                 "epi2me_blind_hep": {
                     "type": "boolean",
                     "title": "Blind hepatitis viruses (HAV-HEV, incl. HBV/HCV)",
-                    "default": false,
-                    "description": "Blind hepatitis viruses (HAV-HEV, including HBV/HCV)."
+                    "default": false
                 },
                 "epi2me_blind_htlv": {
                     "type": "boolean",
                     "title": "Blind Human T-lymphotropic virus (HTLV-1/HTLV-2)",
-                    "default": false,
-                    "description": "Blind Human T-lymphotropic virus (HTLV-1/HTLV-2)."
+                    "default": false
                 },
                 "epi2me_blind_ebv": {
                     "type": "boolean",
                     "title": "Blind Epstein-Barr virus (Human herpesvirus 4)",
-                    "default": false,
-                    "description": "Blind Epstein-Barr virus (Human herpesvirus 4)."
+                    "default": false
                 },
                 "epi2me_blind_cmv": {
                     "type": "boolean",
                     "title": "Blind Cytomegalovirus (Human herpesvirus 5)",
-                    "default": false,
-                    "description": "Blind Cytomegalovirus (Human herpesvirus 5)."
+                    "default": false
                 },
                 "epi2me_blind_hpv": {
                     "type": "boolean",
                     "title": "Blind Human papillomavirus (all types)",
-                    "default": false,
-                    "description": "Blind Human papillomavirus (all types)."
+                    "default": false
                 }
             }
         },
