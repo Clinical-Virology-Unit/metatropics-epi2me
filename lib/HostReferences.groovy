@@ -1,6 +1,4 @@
-import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.StandardCopyOption
 import java.util.zip.GZIPInputStream
 import groovy.transform.Immutable
 
@@ -274,8 +272,10 @@ class HostReferences {
         }
 
         // Prefer params.virasign_db_dir when set (EPI2ME custom Databases location).
+        // Use java.io.File mkdirs (not NIO Files.createDirectories): EPI2ME Desktop
+        // mounts under /home/user often throw "Operation not supported" on NIO.
         Path dbRoot = Path.of(VirasignDb.databaseDir(params, baseDir.toString()))
-        Files.createDirectories(dbRoot)
+        ensureDir(dbRoot)
 
         Path humanPath = null
         Path otherPath = null
@@ -330,20 +330,56 @@ class HostReferences {
             .unique()
     }
 
+    /** EPI2ME /home/user mounts: prefer java.io.File over NIO createDirectories. */
+    private static void ensureDir(Path path) {
+        def f = path.toFile()
+        if (f.isDirectory()) {
+            return
+        }
+        if (!f.mkdirs() && !f.isDirectory()) {
+            throw new IOException("Cannot create directory: ${f.absolutePath}")
+        }
+    }
+
+    private static boolean nonEmptyFile(Path path) {
+        def f = path.toFile()
+        return f.isFile() && f.length() > 0
+    }
+
+    private static void deleteQuietly(Path path) {
+        def f = path.toFile()
+        if (f.exists()) {
+            f.delete()
+        }
+    }
+
+    /** Non-atomic move/copy — ATOMIC_MOVE often fails with "Operation not supported" on EPI2ME mounts. */
+    private static void moveReplace(Path from, Path to) {
+        def src = from.toFile()
+        def dst = to.toFile()
+        if (dst.exists()) {
+            dst.delete()
+        }
+        if (!src.renameTo(dst)) {
+            src.withInputStream { is ->
+                dst.withOutputStream { os -> is.transferTo(os) }
+            }
+            src.delete()
+        }
+    }
+
     private static Path ensureHostFasta(Path dbRoot, HostSpec spec, log) {
         Path hostDir = dbRoot.resolve(spec.relativeDir)
-        Files.createDirectories(hostDir)
+        ensureDir(hostDir)
         Path targetFasta = hostDir.resolve(spec.fastaBasename)
-        if (Files.exists(targetFasta) && Files.size(targetFasta) > 0) {
+        if (nonEmptyFile(targetFasta)) {
             return targetFasta
         }
 
         // Download into a temp file first, then move into place.
         Path tmp = hostDir.resolve("${spec.fastaBasename}.download.tmp")
-        // Defensive: ensure parent dir exists right before writing.
-        // Some filesystems / parallel runs can still hit ENOENT otherwise.
-        Files.createDirectories(tmp.getParent())
-        Files.deleteIfExists(tmp)
+        ensureDir(tmp.getParent())
+        deleteQuietly(tmp)
 
         def lastErr = null
         for (String url : spec.urls) {
@@ -353,18 +389,18 @@ class HostReferences {
                 // If gzipped, decompress into target; otherwise move.
                 if (isGzip(tmp)) {
                     gunzip(tmp, targetFasta)
-                    Files.deleteIfExists(tmp)
+                    deleteQuietly(tmp)
                 } else {
-                    Files.move(tmp, targetFasta, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
+                    moveReplace(tmp, targetFasta)
                 }
-                if (Files.size(targetFasta) == 0) {
+                if (!nonEmptyFile(targetFasta)) {
                     throw new IOException("Downloaded FASTA is empty at ${targetFasta}")
                 }
                 return targetFasta
             } catch (Exception e) {
                 lastErr = e
-                Files.deleteIfExists(tmp)
-                Files.deleteIfExists(targetFasta)
+                deleteQuietly(tmp)
+                deleteQuietly(targetFasta)
                 log.warn "Failed downloading '${spec.key}' from ${url}: ${e.message}"
             }
         }
@@ -373,17 +409,17 @@ class HostReferences {
 
     private static Path ensureMergedOtherHostFasta(Path dbRoot, List<String> keys, List<Path> fastaPaths) {
         Path mergedDir = dbRoot.resolve('_merged')
-        Files.createDirectories(mergedDir)
+        ensureDir(mergedDir)
 
         def safeKeys = keys.collect { it.toString().trim().toLowerCase() }.findAll { it }.unique().sort()
         def basename = "OtherHost__${safeKeys.join('+')}.fa"
         Path merged = mergedDir.resolve(basename)
-        if (Files.exists(merged) && Files.size(merged) > 0) {
+        if (nonEmptyFile(merged)) {
             return merged
         }
 
         Path tmp = mergedDir.resolve("${basename}.tmp")
-        Files.deleteIfExists(tmp)
+        deleteQuietly(tmp)
 
         tmp.toFile().withOutputStream { os ->
             fastaPaths.eachWithIndex { Path p, int idx ->
@@ -392,18 +428,17 @@ class HostReferences {
             }
         }
 
-        if (Files.size(tmp) == 0) {
+        if (!nonEmptyFile(tmp)) {
             throw new IOException("Merged host FASTA is empty at ${tmp}")
         }
-        Files.move(tmp, merged, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
+        moveReplace(tmp, merged)
         return merged
     }
 
     private static void downloadUrl(String urlStr, Path out) {
-        // Defensive: ensure output parent directory exists.
         def parent = out.getParent()
         if (parent) {
-            Files.createDirectories(parent)
+            ensureDir(parent)
         }
         URL url = new URL(urlStr)
         url.openConnection().with { conn ->

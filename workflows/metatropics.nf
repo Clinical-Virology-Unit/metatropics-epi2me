@@ -2,18 +2,10 @@
 
 import groovy.json.JsonSlurper
 
-// Resolve Host keywords into concrete FASTA paths (do not mutate params)
-def resolvedHosts = HostReferences.resolve(params, log, workflow.projectDir)
-def resolvedHumanHostFasta = params.Human_host_fasta ?: resolvedHosts.human ?: params.fasta
-def resolvedOtherHostFasta = params.Other_host_fasta ?: resolvedHosts.other ?: params.host_fasta
-
 def samplesheet = params.input ?: params.epi2me_samplesheet
 
-// Check input path parameters to see if they exist
-def checkPathParamList = [ samplesheet, resolvedHumanHostFasta, resolvedOtherHostFasta ]
-for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
-
-// Check mandatory parameters
+// Check mandatory parameters (host FASTA paths are resolved inside the workflow so EPI2ME
+// "/home/user" mount errors surface clearly — not as "Unable to read script").
 if (samplesheet) { ch_input = file(samplesheet) } else { exit 1, 'Input samplesheet not specified!' }
 
 /* Imports: local subworkflows */
@@ -93,6 +85,15 @@ workflow METATROPICS {
 
     ch_versions = Channel.empty()
     def ch_fixed_reads
+
+    // Resolve Host / Host_additional → FASTA paths (inside workflow: avoids Nextflow
+    // "Unable to read script" wrapping FS errors on EPI2ME /home/user mounts).
+    def resolvedHosts = HostReferences.resolve(params, log, workflow.projectDir.toString())
+    def resolvedHumanHostFasta = params.Human_host_fasta ?: resolvedHosts.human ?: params.fasta
+    def resolvedOtherHostFasta = params.Other_host_fasta ?: resolvedHosts.other ?: params.host_fasta
+    [resolvedHumanHostFasta, resolvedOtherHostFasta].each { p ->
+        if (p) { file(p, checkIfExists: true) }
+    }
 
     // EPI2ME: input_mode + reads from CLI; input_dir/basecall set in main.nf may not reach the workflow.
     def inputMode = params.input_mode?.toString()
