@@ -337,7 +337,10 @@ class HostReferences {
             return
         }
         if (!f.mkdirs() && !f.isDirectory()) {
-            throw new IOException("Cannot create directory: ${f.absolutePath}")
+            throw new IOException(
+                "Cannot create directory: ${f.absolutePath}. " +
+                "If using 'Specify own database location', pick a writable folder or turn that option off."
+            )
         }
     }
 

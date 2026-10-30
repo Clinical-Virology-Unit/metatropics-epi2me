@@ -27,7 +27,18 @@ class Epi2meParams {
         def dbDir = new File(VirasignDb.databaseDir(params, projectDir))
         def custom = VirasignDb.specifyOwnDbLocation(params) || params.virasign_db_dir?.toString()?.trim()
         if (custom) {
-            dbDir.mkdirs()
+            def ok = dbDir.isDirectory() || dbDir.mkdirs()
+            if (!ok || !dbDir.isDirectory()) {
+                def loc = params.epi2me_db_location?.toString()?.trim() ?: dbDir.absolutePath
+                throw new IllegalStateException(
+                    "Cannot create Databases at ${dbDir.absolutePath}. " +
+                    "Specify own database location is ON but that folder is not writable " +
+                    "(default /home/user/data often fails on some EPI2ME setups). " +
+                    "Either turn OFF 'Specify own database location', or pick a writable folder " +
+                    "with the Database location browser (not a path that cannot be created). " +
+                    "Current Database location setting: ${loc}"
+                )
+            }
             log.info "EPI2ME Databases location: ${dbDir.absolutePath}"
         }
     }
@@ -166,7 +177,7 @@ class Epi2meParams {
     }
 
     static String apply(Map params, String repoRoot, def log) {
-        applyDbLocation(params, repoRoot, log)
+        // DB location is applied once from main.nf (avoid duplicate log lines).
 
         if (!params.reads?.toString()?.trim()) {
             return null
