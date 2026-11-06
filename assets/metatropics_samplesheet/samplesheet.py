@@ -20,11 +20,14 @@ import sys
 from pathlib import Path
 
 from . import __version__
-from .twist import TWIST_KITS, mock_twist_run_rows, twist_run_to_pod5_rows
+from .twist import TWIST_KITS, mock_twist_run_rows, twist_run_to_pod5_rows, well_id_to_barcode
 
 # Longest suffix first so e.g. .fastq.gz is not parsed as .fastq
 FASTQ_SUFFIXES = (".fastq.gz", ".fq.gz", ".fastq", ".fq")
 BARCODE_PATTERN = re.compile(r"barcode(\d{2})", re.IGNORECASE)
+
+ALIAS_COLUMNS = ("sample", "name", "alias")
+WELL_COLUMNS = ("well", "well_id", "position")
 
 GENERIC_BARCODE_ROWS: list[tuple[str, str]] = [
     ("Sample1", "barcode01"),
