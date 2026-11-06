@@ -6,47 +6,40 @@ Columns are always **`sample`**, then either **`barcode`** or **`well`** (TWIST 
 
 | Input mode | Reads selection | Sample sheet |
 |------------|-----------------|--------------|
-| `demultiplexed_fastq` | MinKNOW/Dorado **`pass/`** (`barcodeNN/` folders) | **Recommended** — real sample names. Leave blank only if sample IDs may stay as `barcode35`, … |
-| `demultiplexed_fastq` | **Single FASTQ file** | Optional (one sample) |
-| `fastq_pass` | Undemultiplexed `fastq_pass/` (or run folder) | Recommended — `sample,barcode` or `sample,well` |
-| `pod5` | POD5 folder | Recommended — `sample,barcode` or `sample,well` |
+| `demultiplexed_fastq` | `pass/` with `barcodeNN/` folders | real sample names |
+| `demultiplexed_fastq` | single demultiplexed FASTQs folder | real sample names |
+| `fastq_pass` | Undemultiplexed `fastq_pass/` | `sample,barcode` or `sample,well` |
+| `pod5` | POD5 folder | `sample,barcode` or `sample,well` |
 
-Build sheets with **`metatropics-samplesheet`** (from this repo: `pip install -e .`):
+Build sheets with **`metatropics-samplesheet`**:
 
 ```bash
-# Demultiplexed pass/ + TWIST wells from the lab
-metatropics-samplesheet demultiplexed TWIST-96A-UDI -o wells.txt
-# edit wells.txt → sample,well
-metatropics-samplesheet demultiplexed -i pass --kit TWIST-96A-UDI --wells wells.txt -o .
-# → samplesheet.csv for EPI2ME (Reads = pass/, Sample sheet = samplesheet.csv)
+cd epi2melabs/workflows/clinical-virology-unit/metatropics-epi2me
+pip install .
 
-# Or a simple label sheet (GUI-friendly):
-# sample,barcode
-# PatientA,barcode35
-# PatientB,barcode36
+# 1. demultiplexed (pass/ with barcodeNN/)
+metatropics-samplesheet demultiplexed TWIST-96A-UDI -o wells.csv
+metatropics-samplesheet demultiplexed -i pass --kit TWIST-96A-UDI --wells wells.csv -o samplesheet.csv
 
-# POD5 / fastq_pass
-metatropics-samplesheet pod5 TWIST-96A-UDI wells.txt -o POD5.csv
-metatropics-samplesheet fastq_pass TWIST-96A-UDI wells.txt -o fastq_pass.csv
+# 2. fastq_pass
+metatropics-samplesheet fastq_pass TWIST-96A-UDI -o wells.csv
+metatropics-samplesheet fastq_pass TWIST-96A-UDI wells.csv -o fastq_pass.csv
+
+# 3. POD5
+metatropics-samplesheet pod5 TWIST-96A-UDI -o wells.csv
+metatropics-samplesheet pod5 TWIST-96A-UDI wells.csv -o POD5.csv
 ```
-
-Missing barcodes under `pass/` are skipped (not every well is sequenced).
 
 ## Templates
 
 | File | Columns | Use |
 |------|---------|-----|
-| [`demultiplexed.csv`](demultiplexed.csv) | `sample`, `barcode` | Demultiplexed `pass/` — barcode **labels** (`barcode35`) matching folder names |
-| [`POD5.csv`](POD5.csv) | `sample`, `barcode` | POD5 / fastq_pass — barcode labels |
-| [`POD5_wellID.csv`](POD5_wellID.csv) | `sample`, `well` | TWIST plate well IDs (`A01` …); set matching `kit_name` |
+| [`demultiplexed.csv`](demultiplexed.csv) | `sample`, `barcode` | Demultiplexed `pass/` — barcode labels matching `barcodeNN/` folders |
+| [`fastq_pass.csv`](fastq_pass.csv) | `sample`, `barcode` | fastq_pass — barcode labels |
+| [`POD5.csv`](POD5.csv) | `sample`, `barcode` | POD5 — barcode labels |
+| [`wells.csv`](wells.csv) / [`POD5_wellID.csv`](POD5_wellID.csv) | `sample`, `well` | TWIST well IDs — usable **alone** in EPI2ME if **`kit_name`** matches the plate |
 
-## TWIST `kit_name`
+Either form works in EPI2ME:
 
-| Plate | kit_name |
-|-------|----------|
-| A | `TWIST-96A-UDI` |
-| B | `TWIST-96B-UDI` |
-| C | `TWIST-96C-UDI` |
-| D | `TWIST-96D-UDI` |
-
-Well→barcode index is `barcode01`–`barcode96` on every plate; the kit selects which oligo set Dorado uses (POD5/fastq_pass). For demultiplexed data the kit is only needed when converting **well IDs** in `wells.txt` / a well column.
+- **`sample,barcode`** — barcode labels (`barcode01` …); no well conversion
+- **`sample,well`** (`wells.csv`) — lab well IDs; set `kit_name` (e.g. `TWIST-96A-UDI`) and EPI2ME maps well → `barcodeNN` automatically (no need to pre-build `POD5.csv` / `fastq_pass.csv`)
