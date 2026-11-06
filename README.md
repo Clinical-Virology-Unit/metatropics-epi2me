@@ -12,8 +12,8 @@ For command-line runs, HPC, and full documentation, use the main pipeline: **[Cl
 4. Set input mode and reads folder:
    - pod5 — basecall + demultiplex in pipeline (NVIDIA GPU required)
    - fastq_pass — on-device basecalled, demultiplex in pipeline
-   - demultiplexed_fastq — per-sample FASTQ files or barcodeXX/ folders
-5. Sample sheet: yes for pod5 or fastq_pass ([templates](https://github.com/clinical-virology-unit/metatropics-epi2me/blob/main/assets/README.md)); leave blank for demultiplexed_fastq
+   - demultiplexed_fastq — already demultiplexed `pass/` (barcodeNN/ folders) or a single FASTQ
+5. Sample sheet: see [templates](assets/README.md) (`metatropics-samplesheet`, when to attach a sheet for `pass/` vs single FASTQ, POD5/fastq_pass)
 6. Optional: Virasign database (RVDB/Refseq/Custom), host depletion, and other advanced options (e.g. keep Reads or BAM outputs)
 7. Nextflow configuration: profile standard (= Docker). Leave Configuration empty.
 
@@ -37,7 +37,7 @@ If you use Metatropics in your research, please cite:
 De Souza Novaes, A.†, Jansen, D.†, de Block, T., Coppens, S., Ariën, K.K., Selhorst, P., Rezende, A.M.*, & Vercauteren, K*. (2026). Metatropics: Human viral pathogen identification and consensus genome calling from nanopore metagenomic sequencing data. (v0.1.6). Zenodo. https://doi.org/10.5281/zenodo.23590711
 ```
 
-† These authors contributed equally (shared first authorship). 
+† These authors contributed equally (shared first authorship).  
 \* These authors contributed equally (shared senior authorship).
 
 Also cite the tools you use (Nextflow, Virasign, Clair3, etc.); see [Metatropics CITATIONS.md](https://github.com/Clinical-Virology-Unit/Metatropics/blob/main/nf-metatropics/assets/citing/CITATIONS.md).

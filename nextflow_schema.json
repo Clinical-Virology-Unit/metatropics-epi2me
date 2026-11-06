@@ -37,7 +37,7 @@
                     "title": "Sample sheet",
                     "format": "file-path",
                     "description": "Optional samplesheet CSV.",
-                    "help_text": "fastq_pass/pod5: optional sample names + barcode labels (must match demux barcodes). demultiplexed_fastq: optional; leave blank to use barcode folder names, or provide sample,barcode rows that match existing barcodeNN folders. Templates: https://github.com/clinical-virology-unit/metatropics-epi2me/tree/main/assets"
+                    "help_text": "pod5/fastq_pass: sample + barcode label (or sample + well with TWIST kit_name). demultiplexed_fastq + pass/: recommended sample,barcode rows matching barcodeNN folders (build with metatropics-samplesheet demultiplexed); leave blank only to keep names as barcode35…. Single FASTQ: sheet optional. Templates: https://github.com/clinical-virology-unit/metatropics-epi2me/tree/main/assets"
                 },
                 "kit_name": {
                     "type": "string",
