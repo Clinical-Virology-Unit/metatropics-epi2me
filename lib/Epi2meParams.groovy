@@ -205,6 +205,10 @@ class Epi2meParams {
                 repoRoot,
                 log
             )
+            // demultiplexed_fastq sample sheets often have barcode01 labels; map to FASTQ paths.
+            if (inputMode == 'demultiplexed_fastq') {
+                resolveDemultiplexedBarcodeSheet(readsPath, sheetFile, workDir, log)
+            }
         } else {
             generateSamplesheet(inputMode, readsPath, sheetFile, repoRoot, log)
         }
@@ -403,12 +407,12 @@ class Epi2meParams {
 
         def rows = []
         subdirs.each { sub ->
-            def fastq = findFirstFastq(sub)
-            if (!fastq) {
+            def target = resolveBarcodeFolderInput(sub, log)
+            if (!target) {
                 log.warn "Skipping ${sub.name}: no FASTQ found"
                 return
             }
-            rows << [sub.name, fastq.absolutePath]
+            rows << [sub.name, target.absolutePath]
         }
 
         if (!rows) {
@@ -420,9 +424,88 @@ class Epi2meParams {
         return true
     }
 
+    /**
+     * MinKNOW/Dorado pass/barcodeNN/: always point at the folder
+     * (FIX_NAMES reads one or many FASTQs inside when the pipeline runs).
+     */
+    private static File resolveBarcodeFolderInput(File barcodeDir, def log) {
+        def files = listFastqs(barcodeDir)
+        if (!files) {
+            return null
+        }
+        return barcodeDir
+    }
+
+    private static List<File> listFastqs(File directory) {
+        directory.listFiles()?.findAll { it.isFile() && isFastq(it.name) }?.sort { it.name } ?: []
+    }
+
     private static File findFirstFastq(File directory) {
-        def files = directory.listFiles()?.findAll { it.isFile() && isFastq(it.name) }?.sort { it.name }
+        def files = listFastqs(directory)
         return files ? files[0] : null
+    }
+
+    /**
+     * After EPI2ME sample-sheet conversion, barcode column may still be labels (barcode35).
+     * For demultiplexed_fastq, rewrite to merged FASTQ paths under readsPath/barcodeNN/.
+     */
+    private static void resolveDemultiplexedBarcodeSheet(String readsPath, File sheetFile, File workDir, def log) {
+        def readsDir = new File(readsPath)
+        if (!readsDir.isDirectory() || !sheetFile.isFile()) {
+            return
+        }
+        def lines = sheetFile.readLines()
+        if (lines.size() < 2) {
+            return
+        }
+        def outRows = []
+        def missing = []
+        lines.drop(1).each { line ->
+            if (!line?.trim()) {
+                return
+            }
+            def parts = line.split(',', 2)
+            if (parts.size() < 2) {
+                return
+            }
+            def sample = parts[0].trim()
+            def barcode = parts[1].trim()
+            if (isFastq(barcode) || barcode.contains('/')) {
+                outRows << [sample, barcode]
+                return
+            }
+            if (!(barcode ==~ /(?i)barcode\d+/)) {
+                outRows << [sample, barcode]
+                return
+            }
+            def sub = new File(readsDir, barcode)
+            if (!sub.isDirectory()) {
+                missing << barcode
+                return
+            }
+            def target = resolveBarcodeFolderInput(sub, log)
+            if (!target) {
+                missing << barcode
+                return
+            }
+            outRows << [sample, target.absolutePath]
+        }
+        if (missing) {
+            def available = readsDir.listFiles()
+                ?.findAll { it.isDirectory() && it.name ==~ /(?i)barcode\d+/ }
+                ?.collect { it.name }
+                ?.sort()
+            throw new IllegalStateException(
+                "Sample sheet barcodes not found under ${readsPath}: ${missing.unique().join(', ')}. " +
+                "Available: ${available?.join(', ') ?: '(none)'}. " +
+                "For MinKNOW pass/ data use input_mode=demultiplexed_fastq and match barcode folders, " +
+                "or leave Sample sheet empty to auto-detect."
+            )
+        }
+        if (outRows) {
+            writeCsv(sheetFile, outRows)
+            log.info "Resolved demultiplexed sample sheet → FASTQ file/folder paths (${outRows.size()} samples)"
+        }
     }
 
     private static boolean isFastq(String name) {
