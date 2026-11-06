@@ -13,8 +13,8 @@ For command-line runs, HPC, and full documentation, use the main pipeline: **[Cl
    - pod5 — basecall + demultiplex in pipeline (NVIDIA GPU required)
    - fastq_pass — on-device basecalled, demultiplex in pipeline
    - demultiplexed_fastq — already demultiplexed `pass/` (barcodeNN/ folders) or a single FASTQ
-5. Sample sheet: see [templates](assets/README.md) (`metatropics-samplesheet`, when to attach a sheet for `pass/` vs single FASTQ, POD5/fastq_pass)
-6. Optional: Virasign database (RVDB/Refseq/Custom), host depletion, and other advanced options (e.g. keep Reads or BAM outputs)
+5. Sample sheet: see [templates](assets/README.md)
+6. Optional: Virasign database (RVDB/Refseq/Custom), host depletion, and other options.
 7. Nextflow configuration: profile standard (= Docker). Leave Configuration empty.
 
 ### Outputs
